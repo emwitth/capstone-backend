@@ -51,8 +51,10 @@ def process_packet(packet):
         print("dest: ", dest_ip, reverse_ip_lookup(dest_ip))
     # print the process associated with the packet
     if TCP in packet:
-        port = packet[TCP].dport
-        print("port: ", port, ", process: ", associate_port_with_process(port))
+        sport = packet[TCP].sport
+        dport = packet[TCP].dport
+        print("src port: ", sport, ", process: ", associate_port_with_process(sport))
+        print("dest port: ", dport, ", process: ", associate_port_with_process(dport))
 
 def sniff_packets():
     # runs until killed
