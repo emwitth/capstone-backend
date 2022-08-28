@@ -1,6 +1,7 @@
 import netifaces
 from scapy.all import *
 from socket import gethostbyaddr
+from psutil import net_connections, Process
 
 seen_ips = {}
 
@@ -31,6 +32,13 @@ def reverse_ip_lookup(address):
             seen_ips[address] = "no hostname"
             return "no hostname"
 
+def associate_port_with_process(socket):
+    for connection in net_connections():
+        if connection.laddr.port == socket:
+            return Process(connection.pid).name()
+        else:
+            return "no process found"
+
 def process_packet(packet):
     print("--------------------------------")
     # the summary of packets
@@ -41,6 +49,10 @@ def process_packet(packet):
         print("src: ", src_ip, reverse_ip_lookup(src_ip))
         dest_ip = packet[IP].dst
         print("dest: ", dest_ip, reverse_ip_lookup(dest_ip))
+    # print the process associated with the packet
+    if TCP in packet:
+        port = packet[TCP].dport
+        print("port: ", port, ", process: ", associate_port_with_process(port))
 
 def sniff_packets():
     # runs until killed
