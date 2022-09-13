@@ -39,7 +39,6 @@ def reverse_ip_lookup(address):
             return "no hostname"
 
 def check_if_src_or_dest(src, dest):
-    print("HELLLO!!!!!", src, dest, "My IP:", my_ip)
     if src == my_ip:
         return SRC
     elif dest == my_ip:
@@ -52,8 +51,9 @@ def associate_port_with_process(socket):
         else:
             return "no process"
     return "no process"
+
 def process_packet(packet):
-    print("--------------------------------", my_ip)
+    print("--------------------------------")
     # the summary of packets
     print(packet.summary())
     # print the source and destination of IP packets
@@ -71,7 +71,7 @@ def process_packet(packet):
             port = packet[TCP].sport
         elif packet_role == DEST:
             port = packet[TCP].dport
-    print("I am a packet with a {} associated with {}".format(packet_role, associate_port_with_process(port)))
+        print("I am a packet with a {} associated with {}".format(packet_role, associate_port_with_process(port)))
 
 def sniff_packets():
     # runs until killed
