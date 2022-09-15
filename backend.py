@@ -2,11 +2,13 @@ import netifaces
 from scapy.all import *
 from socket import gethostbyaddr
 from psutil import net_connections, Process
+from datetime import datetime
 
 SRC = "source"
 DEST = "destination"
 
 seen_ips = {}
+seen_procs = {}
 my_ip = ""
 
 def main():
@@ -45,9 +47,16 @@ def check_if_src_or_dest(src, dest):
         return DEST
 
 def associate_port_with_process(socket):
+    process_and_timestamp = "";
     for connection in net_connections():
         if connection.laddr.port == socket:
-            return Process(connection.pid).name()
+            process = Process(connection.pid).name()
+            process_and_timestamp = "{} as of {}".format(process, datetime.now())
+            seen_procs[socket] = process_and_timestamp
+            return seen_procs[socket]
+    if process_and_timestamp == "":
+        if socket in seen_procs:
+            return seen_procs[socket]
         else:
             return "no process"
     return "no process"
