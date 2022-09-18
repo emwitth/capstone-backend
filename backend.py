@@ -8,8 +8,6 @@ from psutil import net_connections, Process
 from datetime import datetime
 
 # my modules
-# from interface import IPNode, IPConnection
-# from interfaces/program import ProgNode
 from interfaces.ip_interfaces import IPNode, IPConnection
 from interfaces.program import ProgNode
 
@@ -24,6 +22,11 @@ my_ip = ""
 
 def main():
     # get my address
+    getMyAddr()
+    # sniff
+    sniff_packets()
+
+def getMyAddr():
     global my_ip
     for iface in netifaces.interfaces():
         iface_details = netifaces.ifaddresses(iface)
@@ -34,8 +37,6 @@ def main():
                         my_ip = ip_add;
                         print(my_ip)
                         seen_ips[ip_add] = 'localhost'
-    # sniff
-    sniff_packets()
 
 def reverse_ip_lookup(address):
     # either I've seen this before
