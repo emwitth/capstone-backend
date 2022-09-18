@@ -20,7 +20,7 @@ class ProgInfo:
         self.timestamp = datetime.now()
 
     def __str__(self):
-        return "{}:{} as of {}".format(self.name, self.socket, self.timestamp)
+        return "{}(socket:{}) as of {}".format(self.name, self.socket, self.timestamp)
 
     def __hash__(self):
         return hash(self.name) + hash(self.socket)
@@ -44,7 +44,7 @@ class ProgNode:
             self.ip_cons = {}
             self.ip_cons[ip] = self.ip_node_from_role(ip, role)
 
-    def updateInfo(self, ip, hostname, role):
+    def updateInfo(self, ip, role):
         self.tot_packets += 1
         # if I've seen ip before, have to update
         # else, make a new one

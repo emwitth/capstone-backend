@@ -1,14 +1,23 @@
 # This contains inerfaces (ie classes to just store data)
 # for the ip pieces of the JSON that will be sent to the frontend.
+from constants import *
 
 class IPNode:
     ip:str
     name:str
     tot_packets:int
 
-    def __init__(self, ip:str, tot_packets:int) -> None:
+    def __init__(self, ip:str, name:str) -> None:
         self.ip = ip
-        self.tot_packets = tot_packets
+        self.name = name
+        self.tot_packets = 1
+
+    def updateInfo(self):
+        self.tot_packets += 1
+
+    def print_info(self):
+        print(LINE)
+        print("{}({}), tot. packets:{}".format(self.ip, self.name, self.tot_packets))
 
 class IPNodeConnection:
     ip:str

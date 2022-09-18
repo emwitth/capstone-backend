@@ -12,11 +12,12 @@ from constants import *
 from interfaces.ip_interfaces import IPNode, IPNodeConnection
 from interfaces.program import ProgNode, ProgInfo
 
-PRINT_PACKET_INFO = False
+PRINT_PACKET_INFO = True
 
 emptyProcess: ProgInfo
 seen_ips = {}
-seen_procs = {}
+ip_nodes = {}
+proc_nodes = {}
 my_ip = ""
 
 # items to become the JSON object
@@ -70,18 +71,18 @@ def associate_port_with_process(socket) -> ProgInfo:
     # search for socket in current connections
     for connection in net_connections():
         if connection.laddr.port == socket:
-            # update info if is in seen_procs, else make new info class
-            if socket in seen_procs:
-                seen_procs[socket].update_timestamp()
+            # update info if is in proc_nodes, else make new info class
+            if socket in proc_nodes:
+                proc_nodes[socket].update_timestamp()
             else:
                 process = ProgInfo(socket, Process(connection.pid).name())
-                seen_procs[socket] = process
-            return seen_procs[socket]
+                proc_nodes[socket] = process
+            return proc_nodes[socket]
     # if the loop fails to find the socket, the socket is no longer being used
     # return the last associated process, or nothing if there is none
     if process_and_timestamp == "":
-        if socket in seen_procs:
-            return seen_procs[socket]
+        if socket in proc_nodes:
+            return proc_nodes[socket]
         else:
             return ProfInfo(socket, NO_PROC)
     return ProfInfo(socket, NO_PROC)
@@ -89,27 +90,28 @@ def associate_port_with_process(socket) -> ProgInfo:
 def update_node_info(src, dest, role, src_name, dest_name, process):
     # decide where I am src or dest and set appropriately
     if role == SRC:
-        me = src
-        them = dest
-        my_name = src_name
+        their_ip = dest
         their_name = dest_name
     else:
-        me = dest
-        them = src
-        my_name = dest_name
+        their_ip = src
         their_name = src_name
     # handle case where there is no associated process
     global emptyProcess
     if process.name == NO_PROC:
         if emptyProcess in prog_nodes:
-            prog_nodes[emptyProcess].updateInfo(them, their_name, role)
-        return
+            prog_nodes[emptyProcess].updateInfo(their_ip, role)
     # if I've seen process before, have to update
     # else, make a new one
-    if process in prog_nodes:
-        prog_nodes[process].updateInfo(them, their_name, role)
+    elif process in prog_nodes:
+        prog_nodes[process].updateInfo(their_ip, role)
     else:
-        prog_nodes[process] = ProgNode(process, them, role)
+        prog_nodes[process] = ProgNode(process, their_ip, role)
+    # if I've seen ip before, have to update
+    # else, make a new one
+    if their_ip in ip_nodes:
+        ip_nodes[their_ip].updateInfo()
+    else:
+        ip_nodes[their_ip] = IPNode(their_ip, their_name)
 
 def process_packet(packet):
     # variables 'global' to this function so I can use them outside of if
@@ -130,9 +132,11 @@ def process_packet(packet):
         src_ip = packet[IP].src
         dest_ip = packet[IP].dst
         packet_role = check_if_src_or_dest(src_ip, dest_ip)
+        src_hostname = reverse_ip_lookup(src_ip)
+        dest_hostname = reverse_ip_lookup(dest_ip)
         if PRINT_PACKET_INFO :
-            print("src: ", src_ip, reverse_ip_lookup(src_ip))
-            print("dest: ", dest_ip, reverse_ip_lookup(dest_ip))
+            print("src: ", src_ip, src_hostname)
+            print("dest: ", dest_ip, dest_hostname)
     # parse the process associated with the packet
     if TCP in packet:
         if packet_role == SRC:
@@ -155,7 +159,9 @@ def sniff_packets():
     capture = sniff(prn=process_packet)
     # print(capture.summary())
     for prog in prog_nodes:
-        print(prog_nodes[prog].print_info())
+        prog_nodes[prog].print_info()
+    for ip in ip_nodes:
+        ip_nodes[ip].print_info()
 
 if __name__ == "__main__":
     main()
