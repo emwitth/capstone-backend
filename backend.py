@@ -24,6 +24,7 @@ prog_nodes = {}
 ip_nodes = {}
 
 def main():
+    # add the catchall node for "no process"
     global emptyProcess
     emptyProcess = ProgInfo(NO_PORT, NO_PROC)
     prog_nodes[emptyProcess] = ProgNode(emptyProcess, NO_IP, NO_ROLE)
@@ -111,16 +112,20 @@ def update_node_info(src, dest, role, src_name, dest_name, process):
         prog_nodes[process] = ProgNode(process, them, role)
 
 def process_packet(packet):
-    if PRINT_PACKET_INFO:
-        print(LINE)
-        # the summary of packets
-        print(packet.summary())
-    # parse the source and destination of IP packets
+    # variables 'global' to this function so I can use them outside of if
     packet_role = NO_ROLE
     src_ip = NO_IP
     dest_ip = NO_IP
     src_hostname = NO_HOSTNAME
     dest_hostname = NO_HOSTNAME
+    port = NO_PORT
+    process = ProgInfo(NO_PORT, NO_PROC)
+    # print scapy's summary of the packet
+    if PRINT_PACKET_INFO:
+        print(LINE)
+        # the summary of packets
+        print(packet.summary())
+    # parse the source and destination of IP packets
     if IP in packet:
         src_ip = packet[IP].src
         dest_ip = packet[IP].dst
@@ -129,20 +134,21 @@ def process_packet(packet):
             print("src: ", src_ip, reverse_ip_lookup(src_ip))
             print("dest: ", dest_ip, reverse_ip_lookup(dest_ip))
     # parse the process associated with the packet
-    port = NO_PORT
-    process = ProgInfo(NO_PORT, NO_PROC)
     if TCP in packet:
         if packet_role == SRC:
             port = packet[TCP].sport
         elif packet_role == DEST:
             port = packet[TCP].dport
+        # should return a ProgInfo containing the info needed
         process = associate_port_with_process(port)
         if PRINT_PACKET_INFO:
             print("I am a packet with a {} associated with {}".format
             (
             packet_role, process
             ))
-    update_node_info(src_ip, dest_ip, packet_role, src_hostname, dest_hostname, process);
+    # update count we have stored to send to frontend
+    update_node_info(src_ip, dest_ip, packet_role,
+                    src_hostname, dest_hostname, process);
 
 def sniff_packets():
     # runs until killed

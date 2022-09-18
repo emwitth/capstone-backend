@@ -8,6 +8,7 @@ class ProgInfo:
     name:str
     socket:str
     timestamp:str
+    # TODO: add pid for differentiation between instances of same proc
 
     def __init__(self, socket:str, name:str) -> None:
         self.name = name
@@ -15,6 +16,7 @@ class ProgInfo:
         self.update_timestamp()
 
     def update_timestamp(self):
+        # update the timestamp so we know how recently this was associated with the socket
         self.timestamp = datetime.now()
 
     def __str__(self):
@@ -30,6 +32,10 @@ class ProgNode:
 
     def __init__(self, program:ProgInfo, ip:str, role:str) -> None:
         self.program = program.name
+        # if we have the case where we don't have a process associated,
+        # we still want to have a catchall node "no process"
+        # we add that node in the beginning, but before any packets
+        # have been parsed, so we want to set our count to 0 in that case
         if ip == NO_IP:
             self.tot_packets = 0
             self.ip_cons = {}
@@ -59,7 +65,7 @@ class ProgNode:
     def print_info(self):
         print(LINE)
         print(self.__str__())
-        "Connections:"
+        print("Connections:")
         for con in self.ip_cons:
             print("-- {}".format(self.ip_cons[con]))
 
