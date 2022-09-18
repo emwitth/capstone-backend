@@ -1,8 +1,17 @@
+#!/usr/bin/python3
+
+# python and third-party modules
 import netifaces
 from scapy.all import *
 from socket import gethostbyaddr
 from psutil import net_connections, Process
 from datetime import datetime
+
+# my modules
+# from interface import IPNode, IPConnection
+# from interfaces/program import ProgNode
+from interfaces.ip_interfaces import IPNode, IPConnection
+from interfaces.program import ProgNode
 
 PRINT_PACKET_INFO = False
 
