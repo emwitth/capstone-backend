@@ -8,19 +8,25 @@ from psutil import net_connections, Process
 from datetime import datetime
 
 # my modules
-from interfaces.ip_interfaces import IPNode, IPConnection
-from interfaces.program import ProgNode
+from constants import *
+from interfaces.ip_interfaces import IPNode, IPNodeConnection
+from interfaces.program import ProgNode, ProgInfo
 
 PRINT_PACKET_INFO = False
 
-SRC = "source"
-DEST = "destination"
-
+emptyProcess: ProgInfo
 seen_ips = {}
 seen_procs = {}
 my_ip = ""
 
+# items to become the JSON object
+prog_nodes = {}
+ip_nodes = {}
+
 def main():
+    global emptyProcess
+    emptyProcess = ProgInfo(NO_PORT, NO_PROC)
+    prog_nodes[emptyProcess] = ProgNode(emptyProcess, NO_IP, NO_ROLE)
     # get my address
     getMyAddr()
     # sniff
@@ -49,8 +55,8 @@ def reverse_ip_lookup(address):
             seen_ips[address] = host_tuple[0]
             return host_tuple[0]
         except socket.herror:
-            seen_ips[address] = "no hostname"
-            return "no hostname"
+            seen_ips[address] = NO_HOSTNAME
+            return NO_HOSTNAME
 
 def check_if_src_or_dest(src, dest):
     if src == my_ip:
@@ -58,28 +64,63 @@ def check_if_src_or_dest(src, dest):
     elif dest == my_ip:
         return DEST
 
-def associate_port_with_process(socket):
+def associate_port_with_process(socket) -> ProgInfo:
     process_and_timestamp = "";
+    # search for socket in current connections
     for connection in net_connections():
         if connection.laddr.port == socket:
-            process = Process(connection.pid).name()
-            process_and_timestamp = "{} as of {}".format(process, datetime.now())
-            seen_procs[socket] = process_and_timestamp
+            # update info if is in seen_procs, else make new info class
+            if socket in seen_procs:
+                seen_procs[socket].update_timestamp()
+            else:
+                process = ProgInfo(socket, Process(connection.pid).name())
+                seen_procs[socket] = process
             return seen_procs[socket]
+    # if the loop fails to find the socket, the socket is no longer being used
+    # return the last associated process, or nothing if there is none
     if process_and_timestamp == "":
         if socket in seen_procs:
             return seen_procs[socket]
         else:
-            return "no process"
-    return "no process"
+            return ProfInfo(socket, NO_PROC)
+    return ProfInfo(socket, NO_PROC)
+
+def update_node_info(src, dest, role, src_name, dest_name, process):
+    # decide where I am src or dest and set appropriately
+    if role == SRC:
+        me = src
+        them = dest
+        my_name = src_name
+        their_name = dest_name
+    else:
+        me = dest
+        them = src
+        my_name = dest_name
+        their_name = src_name
+    # handle case where there is no associated process
+    global emptyProcess
+    if process.name == NO_PROC:
+        if emptyProcess in prog_nodes:
+            prog_nodes[emptyProcess].updateInfo(them, their_name, role)
+        return
+    # if I've seen process before, have to update
+    # else, make a new one
+    if process in prog_nodes:
+        prog_nodes[process].updateInfo(them, their_name, role)
+    else:
+        prog_nodes[process] = ProgNode(process, them, role)
 
 def process_packet(packet):
     if PRINT_PACKET_INFO:
-        print("--------------------------------")
+        print(LINE)
         # the summary of packets
         print(packet.summary())
-    # print the source and destination of IP packets
-    packet_role = "no role";
+    # parse the source and destination of IP packets
+    packet_role = NO_ROLE
+    src_ip = NO_IP
+    dest_ip = NO_IP
+    src_hostname = NO_HOSTNAME
+    dest_hostname = NO_HOSTNAME
     if IP in packet:
         src_ip = packet[IP].src
         dest_ip = packet[IP].dst
@@ -87,21 +128,28 @@ def process_packet(packet):
         if PRINT_PACKET_INFO :
             print("src: ", src_ip, reverse_ip_lookup(src_ip))
             print("dest: ", dest_ip, reverse_ip_lookup(dest_ip))
-    # print the process associated with the packet
-    port = "no port"
+    # parse the process associated with the packet
+    port = NO_PORT
+    process = ProgInfo(NO_PORT, NO_PROC)
     if TCP in packet:
         if packet_role == SRC:
             port = packet[TCP].sport
         elif packet_role == DEST:
             port = packet[TCP].dport
+        process = associate_port_with_process(port)
         if PRINT_PACKET_INFO:
-            print("I am a packet with a {} associated with {}".format(packet_role,
-                                                associate_port_with_process(port)))
+            print("I am a packet with a {} associated with {}".format
+            (
+            packet_role, process
+            ))
+    update_node_info(src_ip, dest_ip, packet_role, src_hostname, dest_hostname, process);
 
 def sniff_packets():
     # runs until killed
     capture = sniff(prn=process_packet)
     # print(capture.summary())
+    for prog in prog_nodes:
+        print(prog_nodes[prog].print_info())
 
 if __name__ == "__main__":
     main()
