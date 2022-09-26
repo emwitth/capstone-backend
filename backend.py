@@ -41,6 +41,7 @@ def getMyAddr():
         if netifaces.AF_INET in iface_details:
             for ip_interfaces in iface_details[netifaces.AF_INET]:
                 for key, ip_add in ip_interfaces.items():
+                    print(key, ip_add)
                     if key == 'addr' and ip_add != '127.0.0.1':
                         my_ip = ip_add;
                         print(my_ip)
@@ -132,6 +133,17 @@ def process_packet(packet):
         src_ip = packet[IP].src
         dest_ip = packet[IP].dst
         packet_role = check_if_src_or_dest(src_ip, dest_ip)
+        src_hostname = reverse_ip_lookup(src_ip)
+        dest_hostname = reverse_ip_lookup(dest_ip)
+        if PRINT_PACKET_INFO :
+            print("src: ", src_ip, src_hostname)
+            print("dest: ", dest_ip, dest_hostname)
+    # parse the source and destination of IPv6 packets
+    if IPv6 in packet:
+        print("IPV6!!!!!!!!!!")
+        src_ip = packet[IPv6].src
+        dest_ip = packet[IPv6].dst
+        print(src_ip, dest_ip)
         src_hostname = reverse_ip_lookup(src_ip)
         dest_hostname = reverse_ip_lookup(dest_ip)
         if PRINT_PACKET_INFO :
