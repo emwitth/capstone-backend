@@ -27,7 +27,7 @@ ip_nodes = {}
 def main():
     # add the catchall node for "no process"
     global emptyProcess
-    emptyProcess = ProgInfo(NO_PORT, NO_PROC)
+    emptyProcess = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
     prog_nodes[emptyProcess] = ProgNode(emptyProcess, NO_IP, NO_ROLE)
     # get my address
     getMyAddr()
@@ -76,7 +76,7 @@ def associate_port_with_process(socket) -> ProgInfo:
             if socket in proc_nodes:
                 proc_nodes[socket].update_timestamp()
             else:
-                process = ProgInfo(socket, Process(connection.pid).name())
+                process = ProgInfo(Process(connection.pid).name(), socket, connection.pid)
                 proc_nodes[socket] = process
             return proc_nodes[socket]
     # if the loop fails to find the socket, the socket is no longer being used
@@ -122,7 +122,7 @@ def process_packet(packet):
     src_hostname = NO_HOSTNAME
     dest_hostname = NO_HOSTNAME
     port = NO_PORT
-    process = ProgInfo(NO_PORT, NO_PROC)
+    process = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
     # print scapy's summary of the packet
     if PRINT_PACKET_INFO:
         print(LINE)
