@@ -140,7 +140,6 @@ def process_packet(packet):
             print("dest: ", dest_ip, dest_hostname)
     # parse the source and destination of IPv6 packets
     if IPv6 in packet:
-        print("IPV6!!!!!!!!!!")
         src_ip = packet[IPv6].src
         dest_ip = packet[IPv6].dst
         print(src_ip, dest_ip)
