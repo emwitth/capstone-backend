@@ -7,12 +7,14 @@ from interfaces.ip_interfaces import IPNodeConnection
 class ProgInfo:
     name:str
     socket:str
+    fd: str
     timestamp:str
     # TODO: add pid for differentiation between instances of same proc
 
-    def __init__(self, socket:str, name:str) -> None:
+    def __init__(self, name:str, socket:str, fd:str) -> None:
         self.name = name
         self.socket = socket
+        self.fd = fd
         self.update_timestamp()
 
     def update_timestamp(self):
@@ -20,10 +22,10 @@ class ProgInfo:
         self.timestamp = datetime.now()
 
     def __str__(self):
-        return "{}(socket:{}) as of {}".format(self.name, self.socket, self.timestamp)
+        return "{}({}, socket:{}) as of {}".format(self.name, self.fd, self.socket, self.timestamp)
 
     def __hash__(self):
-        return hash(self.name) + hash(self.socket)
+        return hash(self.name) + hash(self.socket) + hash(self.fd)
 
 class ProgNode:
     program:ProgInfo
@@ -31,7 +33,7 @@ class ProgNode:
     ip_cons:dict
 
     def __init__(self, program:ProgInfo, ip:str, role:str) -> None:
-        self.program = program.name
+        self.program = program
         # if we have the case where we don't have a process associated,
         # we still want to have a catchall node "no process"
         # we add that node in the beginning, but before any packets
@@ -70,4 +72,4 @@ class ProgNode:
             print("-- {}".format(self.ip_cons[con]))
 
     def __str__(self):
-        return "{}, packets:{}".format(self.program, self.tot_packets)
+        return "{}({}), packets:{}".format(self.program.name, self.program.fd, self.tot_packets)
