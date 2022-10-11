@@ -6,13 +6,14 @@ from scapy.all import *
 from socket import gethostbyaddr
 from psutil import net_connections, Process
 from datetime import datetime
+from sys import stdin
 
 # my modules
 from constants import *
 from data_structures.ip_interfaces import IPNode, IPNodeConnection
 from data_structures.program import ProgNode, ProgInfo
 
-PRINT_PACKET_INFO = True
+PRINT_PACKET_INFO = False
 
 emptyProcess: ProgInfo
 seen_ips = {}
@@ -41,7 +42,6 @@ def getMyAddr():
         if netifaces.AF_INET in iface_details:
             for ip_interfaces in iface_details[netifaces.AF_INET]:
                 for key, ip_add in ip_interfaces.items():
-                    # print(key, ip_add)
                     if key == 'addr' and ip_add != '127.0.0.1':
                         my_ip = ip_add;
                         print(my_ip)
@@ -142,7 +142,6 @@ def process_packet(packet):
     if IPv6 in packet:
         src_ip = packet[IPv6].src
         dest_ip = packet[IPv6].dst
-        print(src_ip, dest_ip)
         src_hostname = reverse_ip_lookup(src_ip)
         dest_hostname = reverse_ip_lookup(dest_ip)
         if PRINT_PACKET_INFO :
@@ -167,9 +166,14 @@ def process_packet(packet):
 
 def sniff_packets():
     # runs until killed
-    capture = AsyncSniffer(prn=process_packet, count=20)
+    capture = AsyncSniffer(prn=process_packet)
     capture.start()
-    capture.join()
+    print("Started Sniff, enter 'Exit' to stop")
+    for line in sys.stdin:
+        if 'Exit' == line.rstrip():
+            capture.stop()
+            break
+    print("Done Sniffing")
     for prog in prog_nodes:
         prog_nodes[prog].print_info()
     for ip in ip_nodes:
