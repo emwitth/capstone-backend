@@ -13,62 +13,54 @@ from constants import *
 from data_structures.ip import IPNode, IPNodeConnection
 from data_structures.program import ProgNode, ProgInfo
 
-PRINT_PACKET_INFO = False
-
-emptyProcess: ProgInfo
-seen_ips = {}
-ip_nodes = {}
-proc_nodes = {}
-my_ip = ""
-
-# items to become the JSON object
-prog_nodes = {}
-ip_nodes = {}
-
-def main():
-    # add the catchall node for "no process"
-    global emptyProcess
-    emptyProcess = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
-    prog_nodes[emptyProcess] = ProgNode(emptyProcess, NO_IP, NO_ROLE)
-
-    packet_sniffer = PacketSniffer()
-
-    # get my address
-    packet_sniffer.getMyAddr()
-    # sniff
-    packet_sniffer.sniff_packets()
-
 class PacketSniffer:
+    emptyProcess: ProgInfo
+    seen_ips = {}
+    ip_nodes = {}
+    proc_nodes = {}
+    my_ip = ""
+
+    # items to become the JSON object
+    prog_nodes = {}
+    ip_nodes = {}
+
+    def __init__(self):
+        # add the catchall node for "no process"
+        self.emptyProcess = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
+        self.prog_nodes[self.emptyProcess] = ProgNode(self.emptyProcess, NO_IP, NO_ROLE)
+
+        # get my address
+        self.getMyAddr()
+
     def getMyAddr(self):
-        global my_ip
         for iface in netifaces.interfaces():
             iface_details = netifaces.ifaddresses(iface)
             if netifaces.AF_INET in iface_details:
                 for ip_interfaces in iface_details[netifaces.AF_INET]:
                     for key, ip_add in ip_interfaces.items():
                         if key == 'addr' and ip_add != '127.0.0.1':
-                            my_ip = ip_add;
-                            print(my_ip)
-                            seen_ips[ip_add] = 'localhost'
+                            self.my_ip = ip_add;
+                            print(self.my_ip)
+                            self.seen_ips[ip_add] = 'localhost'
 
     def reverse_ip_lookup(self, address):
         # either I've seen this before
-        if address in seen_ips:
-            return seen_ips[address]
+        if address in self.seen_ips:
+            return self.seen_ips[address]
         else:
             # or I have to look it up
             try:
                 host_tuple = gethostbyaddr(address)
-                seen_ips[address] = host_tuple[0]
+                self.seen_ips[address] = host_tuple[0]
                 return host_tuple[0]
             except socket.herror:
-                seen_ips[address] = NO_HOSTNAME
+                self.seen_ips[address] = NO_HOSTNAME
                 return NO_HOSTNAME
 
     def check_if_src_or_dest(self, src, dest):
-        if src == my_ip:
+        if src == self.my_ip:
             return SRC
-        elif dest == my_ip:
+        elif dest == self.my_ip:
             return DEST
 
     def associate_port_with_process(self, socket) -> ProgInfo:
@@ -78,16 +70,16 @@ class PacketSniffer:
             if connection.laddr.port == socket:
                 # update info if is in proc_nodes, else make new info class
                 if socket in proc_nodes:
-                    proc_nodes[socket].update_timestamp()
+                    self.proc_nodes[socket].update_timestamp()
                 else:
                     process = ProgInfo(Process(connection.pid).name(), socket, connection.pid)
-                    proc_nodes[socket] = process
-                return proc_nodes[socket]
+                    self.proc_nodes[socket] = process
+                return self.proc_nodes[socket]
         # if the loop fails to find the socket, the socket is no longer being used
         # return the last associated process, or nothing if there is none
         if process_and_timestamp == "":
-            if socket in proc_nodes:
-                return proc_nodes[socket]
+            if socket in self.proc_nodes:
+                return self.proc_nodes[socket]
             else:
                 return ProfInfo(socket, NO_PROC)
         return ProfInfo(socket, NO_PROC)
@@ -101,22 +93,21 @@ class PacketSniffer:
             their_ip = src
             their_name = src_name
         # handle case where there is no associated process
-        global emptyProcess
         if process.name == NO_PROC:
-            if emptyProcess in prog_nodes:
-                prog_nodes[emptyProcess].updateInfo(their_ip, role)
+            if self.emptyProcess in self.prog_nodes:
+                self.prog_nodes[self.emptyProcess].updateInfo(their_ip, role)
         # if I've seen process before, have to update
         # else, make a new one
         elif process in prog_nodes:
-            prog_nodes[process].updateInfo(their_ip, role)
+            self.prog_nodes[process].updateInfo(their_ip, role)
         else:
-            prog_nodes[process] = ProgNode(process, their_ip, role)
+            self.prog_nodes[process] = ProgNode(process, their_ip, role)
         # if I've seen ip before, have to update
         # else, make a new one
-        if their_ip in ip_nodes:
-            ip_nodes[their_ip].updateInfo()
+        if their_ip in self.ip_nodes:
+            self.ip_nodes[their_ip].updateInfo()
         else:
-            ip_nodes[their_ip] = IPNode(their_ip, their_name)
+            self.ip_nodes[their_ip] = IPNode(their_ip, their_name)
 
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if
@@ -178,10 +169,7 @@ class PacketSniffer:
                 capture.stop()
                 break
         print("Done Sniffing")
-        for prog in prog_nodes:
-            prog_nodes[prog].print_info()
-        for ip in ip_nodes:
-            ip_nodes[ip].print_info()
-
-if __name__ == "__main__":
-    main()
+        for prog in self.prog_nodes:
+            self.prog_nodes[prog].print_info()
+        for ip in self.ip_nodes:
+            self.ip_nodes[ip].print_info()
