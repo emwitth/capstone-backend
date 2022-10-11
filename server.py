@@ -1,10 +1,6 @@
 from flask import Flask, jsonify
 
-
-app = Flask(__name__)
-
-@app.route('/api/graph-data')
-def index():
+def graph_data():
     return jsonify(
     {
         "prog_nodes": [
@@ -43,5 +39,13 @@ def index():
         ]
     })
 
-if __name__ == '__main__':
+def initalize_urls(app):
+    app.add_url_rule('/api/graph-data', 'graph_data', graph_data)
+
+def start_app(app):
     app.run()
+
+def run_server():
+    app = Flask(__name__)
+    initalize_urls(app)
+    start_app(app)
