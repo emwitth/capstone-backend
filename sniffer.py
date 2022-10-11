@@ -19,6 +19,7 @@ class PacketSniffer:
     ip_nodes = {}
     proc_nodes = {}
     my_ip = ""
+    capture: AsyncSniffer
 
     # items to become the JSON object
     prog_nodes = {}
@@ -28,6 +29,7 @@ class PacketSniffer:
         # add the catchall node for "no process"
         self.emptyProcess = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
         self.prog_nodes[self.emptyProcess] = ProgNode(self.emptyProcess, NO_IP, NO_ROLE)
+        self.capture = AsyncSniffer(prn=self.process_packet)
 
         # get my address
         self.getMyAddr()
@@ -160,14 +162,11 @@ class PacketSniffer:
                         src_hostname, dest_hostname, process);
 
     def sniff_packets(self):
-        # runs until killed
-        capture = AsyncSniffer(prn=self.process_packet)
-        capture.start()
-        print("Started Sniff, enter 'Exit' to stop")
-        for line in sys.stdin:
-            if 'Exit' == line.rstrip():
-                capture.stop()
-                break
+        print("Sniffing Started")
+        self.capture.start()
+
+    def stop_sniffing(self):
+        self.capture.stop()
         print("Done Sniffing")
         for prog in self.prog_nodes:
             self.prog_nodes[prog].print_info()
