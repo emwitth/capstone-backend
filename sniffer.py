@@ -5,6 +5,7 @@ import netifaces
 from scapy.all import *
 from socket import gethostbyaddr
 from psutil import net_connections, Process
+from threading import Lock
 from datetime import datetime
 from sys import stdin
 
@@ -20,6 +21,7 @@ class PacketSniffer:
     proc_nodes = {}
     my_ip = ""
     capture: AsyncSniffer
+    lock: Lock
 
     # items to become the JSON object
     prog_nodes = {}
@@ -30,6 +32,7 @@ class PacketSniffer:
         self.emptyProcess = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
         self.prog_nodes[self.emptyProcess] = ProgNode(self.emptyProcess, NO_IP, NO_ROLE)
         self.capture = AsyncSniffer(prn=self.process_packet)
+        self.lock = Lock()
 
         # get my address
         self.getMyAddr()
@@ -67,24 +70,32 @@ class PacketSniffer:
 
     def associate_port_with_process(self, socket) -> ProgInfo:
         process_and_timestamp = "";
+        toReturn = ProfInfo(socket, NO_PROC)
         # search for socket in current connections
         for connection in net_connections():
             if connection.laddr.port == socket:
                 # update info if is in proc_nodes, else make new info class
-                if socket in proc_nodes:
-                    self.proc_nodes[socket].update_timestamp()
-                else:
-                    process = ProgInfo(Process(connection.pid).name(), socket, connection.pid)
-                    self.proc_nodes[socket] = process
-                return self.proc_nodes[socket]
+                self.lock.acquire() # acquire lock
+                try:
+                    if socket in proc_nodes:
+                        self.proc_nodes[socket].update_timestamp()
+                    else:
+                        process = ProgInfo(Process(connection.pid).name(), socket, connection.pid)
+                        self.proc_nodes[socket] = process
+                    toReturn = self.proc_nodes[socket]
+                finally:
+                    self.lock.release() # release lock
+                return toReturn
         # if the loop fails to find the socket, the socket is no longer being used
         # return the last associated process, or nothing if there is none
         if process_and_timestamp == "":
-            if socket in self.proc_nodes:
-                return self.proc_nodes[socket]
-            else:
-                return ProfInfo(socket, NO_PROC)
-        return ProfInfo(socket, NO_PROC)
+            self.lock.acquire() # acquire lock
+            try:
+                if socket in self.proc_nodes:
+                    toReturn = self.proc_nodes[socket]
+            finally:
+                self.lock.release() # release lock
+        return toReturn
 
     def update_node_info(self, src, dest, role, src_name, dest_name, process):
         # decide where I am src or dest and set appropriately
@@ -94,22 +105,29 @@ class PacketSniffer:
         else:
             their_ip = src
             their_name = src_name
-        # handle case where there is no associated process
-        if process.name == NO_PROC:
-            if self.emptyProcess in self.prog_nodes:
-                self.prog_nodes[self.emptyProcess].updateInfo(their_ip, role)
-        # if I've seen process before, have to update
-        # else, make a new one
-        elif process in prog_nodes:
-            self.prog_nodes[process].updateInfo(their_ip, role)
-        else:
-            self.prog_nodes[process] = ProgNode(process, their_ip, role)
-        # if I've seen ip before, have to update
-        # else, make a new one
-        if their_ip in self.ip_nodes:
-            self.ip_nodes[their_ip].updateInfo()
-        else:
-            self.ip_nodes[their_ip] = IPNode(their_ip, their_name)
+        self.lock.acquire() # acquire lock
+        try:
+            # handle case where there is no associated process
+            if process.name == NO_PROC:
+                if self.emptyProcess in self.prog_nodes:
+                    self.prog_nodes[self.emptyProcess].updateInfo(their_ip, role)
+            # if I've seen process before, have to update
+            # else, make a new one
+            elif process in prog_nodes:
+                self.prog_nodes[process].updateInfo(their_ip, role)
+            else:
+                self.prog_nodes[process] = ProgNode(process, their_ip, role)
+            # if I've seen ip before, have to update
+            # else, make a new one
+            if their_ip in self.ip_nodes:
+                self.ip_nodes[their_ip].updateInfo()
+            else:
+                self.ip_nodes[their_ip] = IPNode(their_ip, their_name)
+        finally:
+            self.lock.release() # release lock
+
+    def get_graph_json():
+        pass
 
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if
