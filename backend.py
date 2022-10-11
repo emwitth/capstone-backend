@@ -9,8 +9,8 @@ from datetime import datetime
 
 # my modules
 from constants import *
-from interfaces.ip_interfaces import IPNode, IPNodeConnection
-from interfaces.program import ProgNode, ProgInfo
+from data_structures.ip_interfaces import IPNode, IPNodeConnection
+from data_structures.program import ProgNode, ProgInfo
 
 PRINT_PACKET_INFO = True
 
@@ -41,7 +41,7 @@ def getMyAddr():
         if netifaces.AF_INET in iface_details:
             for ip_interfaces in iface_details[netifaces.AF_INET]:
                 for key, ip_add in ip_interfaces.items():
-                    print(key, ip_add)
+                    # print(key, ip_add)
                     if key == 'addr' and ip_add != '127.0.0.1':
                         my_ip = ip_add;
                         print(my_ip)
@@ -167,8 +167,9 @@ def process_packet(packet):
 
 def sniff_packets():
     # runs until killed
-    capture = sniff(prn=process_packet)
-    # print(capture.summary())
+    capture = AsyncSniffer(prn=process_packet, count=20)
+    capture.start()
+    capture.join()
     for prog in prog_nodes:
         prog_nodes[prog].print_info()
     for ip in ip_nodes:
