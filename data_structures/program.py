@@ -2,7 +2,7 @@
 # for the program pieces of the JSON that will be sent to the frontend.
 from constants import *
 from datetime import datetime
-from data_structures.ip_interfaces import IPNodeConnection
+from data_structures.ip import IPNodeConnection
 
 class ProgInfo:
     name:str
