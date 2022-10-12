@@ -3,6 +3,7 @@
 from constants import *
 from datetime import datetime
 from data_structures.ip import IPNodeConnection
+from data_structures.link import Link
 
 class ProgInfo:
     name:str
@@ -63,6 +64,12 @@ class ProgNode:
             return IPNodeConnection(ip, 1, 0)
         else:
             return IPNodeConnection(ip, 0, 1)
+
+    def make_con_list(self):
+        list = []
+        for con in self.ip_cons.values():
+            list.append(Link(con.ip, self.program.__dict__, con.in_packets, con.out_packets).__dict__)
+        return list
 
     def print_info(self):
         print(LINE)

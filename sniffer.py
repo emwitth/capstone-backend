@@ -8,11 +8,13 @@ from psutil import net_connections, Process
 from threading import Lock
 from datetime import datetime
 from sys import stdin
+from json import dumps
 
 # my modules
 from constants import *
 from data_structures.ip import IPNode, IPNodeConnection
 from data_structures.program import ProgNode, ProgInfo
+from data_structures.link import Link
 
 class PacketSniffer:
     emptyProcess: ProgInfo
@@ -126,8 +128,15 @@ class PacketSniffer:
         finally:
             self.lock.release() # release lock
 
-    def get_graph_json():
-        pass
+    def get_graph_json(self):
+        links = []
+        self.lock.acquire() # acquire lock
+        try:
+            for prog in self.prog_nodes:
+                links.extend(self.prog_nodes[prog].make_con_list())
+        finally:
+            self.lock.release() # release lock
+        return links
 
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if
