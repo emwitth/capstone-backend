@@ -65,6 +65,9 @@ class ProgNode:
         else:
             return IPNodeConnection(ip, 0, 1)
 
+    def return_fields_for_json(self):
+        return {"program": self.program.__dict__, "tot_packets": self.tot_packets}
+
     def make_con_list(self):
         list = []
         for con in self.ip_cons.values():

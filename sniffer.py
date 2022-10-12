@@ -72,14 +72,14 @@ class PacketSniffer:
 
     def associate_port_with_process(self, socket) -> ProgInfo:
         process_and_timestamp = "";
-        toReturn = ProfInfo(socket, NO_PROC)
+        toReturn = ProgInfo(NO_PROC, socket, NO_PROC)
         # search for socket in current connections
         for connection in net_connections():
             if connection.laddr.port == socket:
                 # update info if is in proc_nodes, else make new info class
                 self.lock.acquire() # acquire lock
                 try:
-                    if socket in proc_nodes:
+                    if socket in self.proc_nodes:
                         self.proc_nodes[socket].update_timestamp()
                     else:
                         process = ProgInfo(Process(connection.pid).name(), socket, connection.pid)
@@ -115,7 +115,7 @@ class PacketSniffer:
                     self.prog_nodes[self.emptyProcess].updateInfo(their_ip, role)
             # if I've seen process before, have to update
             # else, make a new one
-            elif process in prog_nodes:
+            elif process in self.prog_nodes:
                 self.prog_nodes[process].updateInfo(their_ip, role)
             else:
                 self.prog_nodes[process] = ProgNode(process, their_ip, role)
@@ -130,13 +130,23 @@ class PacketSniffer:
 
     def get_graph_json(self):
         links = []
+        ips = []
+        progs = []
         self.lock.acquire() # acquire lock
         try:
-            for prog in self.prog_nodes:
-                links.extend(self.prog_nodes[prog].make_con_list())
+            for prog in self.prog_nodes.values():
+                links.extend(prog.make_con_list())
+                progs.append(prog.return_fields_for_json())
+            for ip in self.ip_nodes.values():
+                ips.append(ip.__dict__)
         finally:
             self.lock.release() # release lock
-        return links
+        print(progs)
+        return {
+        "links": links,
+        "ip_nodes": ips,
+        "prog_nodes": progs
+        }
 
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if

@@ -13,7 +13,7 @@ class Server:
         self.initalize_urls()
 
     def graph_data(self):
-        return jsonify({"links": self.packet_sniffer.get_graph_json()})
+        return jsonify(self.packet_sniffer.get_graph_json())
 
     def sniff_controller(self, on):
         if(on.title() == "True"):
