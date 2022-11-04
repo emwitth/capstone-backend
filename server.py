@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 # my modules
 from sniffer import PacketSniffer
@@ -24,9 +24,14 @@ class Server:
             return jsonify("Packet Sniffer Stopped")
         return jsonify("Failed")
 
+    def node_packets(self):
+        json = request.get_json()
+        return jsonify(json["isIP"])
+
     def initalize_urls(self):
         self.app.add_url_rule('/api/graph-data', 'graph_data', self.graph_data)
         self.app.add_url_rule('/api/sniff/<string:on>', 'sniff_controller', self.sniff_controller, methods=['POST'])
+        self.app.add_url_rule('/api/node_packets', 'node_packets', self.node_packets, methods=['POST'])
 
     def start_app(self):
         self.app.run()
