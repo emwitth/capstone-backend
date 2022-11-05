@@ -131,9 +131,10 @@ class PacketSniffer:
             # if I've seen ip before, have to update
             # else, make a new one
             if their_ip in self.ip_nodes:
-                self.ip_nodes[their_ip].updateInfo()
+                self.ip_nodes[their_ip].updateInfo(packetInfo)
             else:
                 self.ip_nodes[their_ip] = IPNode(their_ip, their_name)
+                self.ip_nodes[their_ip].addPacket(packetInfo)
         finally:
             self.lock.release() # release lock
 
@@ -147,7 +148,7 @@ class PacketSniffer:
                 links.extend(prog.make_con_list())
                 progs.append(prog.return_fields_for_json())
             for ip in self.ip_nodes.values():
-                ips.append(ip.__dict__)
+                ips.append(ip.get_info())
         finally:
             self.lock.release() # release lock
         print(progs)
@@ -158,17 +159,31 @@ class PacketSniffer:
         }
 
     def get_ip_node_packets(self, ip):
-        pass
+        packets = []
+        links = []
+        self.lock.acquire() # acquire lock
+        print("IP---------------------")
+        print(ip)
+        try:
+            if ip in self.ip_nodes:
+                print("inside")
+                node = self.ip_nodes[ip]
+                for packet in node.packets:
+                    packets.append(packet.getInfo())
+                    print(packet)
+        finally:
+            self.lock.release() # release lock
+        return packets
 
-    def get_graph_node_packets(self, name, socket, fd):
+    def get_prog_node_packets(self, name, socket, fd):
         progInfo = ProgInfo(name, socket, fd)
         packets = []
         links = []
         self.lock.acquire() # acquire lock
         try:
             if progInfo in self.prog_nodes:
-                prog = self.prog_nodes[progInfo]
-                for packet in prog.packets:
+                node = self.prog_nodes[progInfo]
+                for packet in node.packets:
                     packets.append(packet.getInfo())
                     print(packet)
         finally:

@@ -27,10 +27,10 @@ class Server:
     def node_packets(self):
         params = request.get_json()
         if(params["isIP"] == True):
-            return jsonify(params)
+            packets = self.packet_sniffer.get_ip_node_packets(params["ip"])
+            return jsonify(packets)
         else:
-            print(params)
-            packets = self.packet_sniffer.get_graph_node_packets(params["name"], params["socket"], params["fd"])
+            packets = self.packet_sniffer.get_prog_node_packets(params["name"], params["socket"], params["fd"])
             return jsonify(packets)
         return jsonify(params)
 
