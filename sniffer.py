@@ -15,6 +15,7 @@ from constants import *
 from data_structures.ip import IPNode, IPNodeConnection
 from data_structures.program import ProgNode, ProgInfo
 from data_structures.link import Link
+from data_structures.packet import PacketInfo
 
 class PacketSniffer:
     emptyProcess: ProgInfo
@@ -99,7 +100,7 @@ class PacketSniffer:
                 self.lock.release() # release lock
         return toReturn
 
-    def update_node_info(self, src, dest, role, src_name, dest_name, process):
+    def update_node_info(self, src, dest, role, src_name, dest_name, process, packet):
         # decide where I am src or dest and set appropriately
         if role == SRC:
             their_ip = dest
@@ -107,18 +108,26 @@ class PacketSniffer:
         else:
             their_ip = src
             their_name = src_name
+        # create packet info object to be stored
+        packetInfo = PacketInfo(packet.summary(),
+            src, src_name,
+            dest, dest_name,
+            packet
+            )
         self.lock.acquire() # acquire lock
         try:
             # handle case where there is no associated process
             if process.name == NO_PROC:
                 if self.emptyProcess in self.prog_nodes:
-                    self.prog_nodes[self.emptyProcess].updateInfo(their_ip, role)
+                    self.prog_nodes[self.emptyProcess].updateInfo(their_ip, role, packetInfo)
             # if I've seen process before, have to update
             # else, make a new one
             elif process in self.prog_nodes:
-                self.prog_nodes[process].updateInfo(their_ip, role)
+                self.prog_nodes[process].updateInfo(their_ip, role, packetInfo)
             else:
                 self.prog_nodes[process] = ProgNode(process, their_ip, role)
+                self.prog_nodes[process].addPacket(packetInfo)
+
             # if I've seen ip before, have to update
             # else, make a new one
             if their_ip in self.ip_nodes:
@@ -147,6 +156,24 @@ class PacketSniffer:
         "ip_nodes": ips,
         "prog_nodes": progs
         }
+
+    def get_ip_node_packets(self, ip):
+        pass
+
+    def get_graph_node_packets(self, name, socket, fd):
+        progInfo = ProgInfo(name, socket, fd)
+        packets = []
+        links = []
+        self.lock.acquire() # acquire lock
+        try:
+            if progInfo in self.prog_nodes:
+                prog = self.prog_nodes[progInfo]
+                for packet in prog.packets:
+                    packets.append(packet.getInfo())
+                    print(packet)
+        finally:
+            self.lock.release() # release lock
+        return packets
 
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if
@@ -196,7 +223,7 @@ class PacketSniffer:
                 ))
         # update count we have stored to send to frontend
         self.update_node_info(src_ip, dest_ip, packet_role,
-                        src_hostname, dest_hostname, process);
+                        src_hostname, dest_hostname, process, packet);
 
     def sniff_packets(self):
         print("Sniffing Started")

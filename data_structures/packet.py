@@ -1,0 +1,31 @@
+# This contain a class for the packet information
+# that will be sent to the frontend.
+from scapy.all import packet
+
+class PacketInfo:
+    summary:str
+    src:str
+    dest:str
+    src_name:str
+    dest_name:str
+    packet: packet.Packet
+
+    def __init__(self, summary:str, src:str, src_name:str, dest:str, dest_name:str, packet:packet.Packet):
+        self.summary = summary
+        self.src = src
+        self.dest = dest
+        self.src_name = src_name
+        self.dest_name = dest_name
+        self.packet = packet
+
+    def __str__(self):
+        return self.summary + " -- " + self.src_name + "-->" + self.dest_name
+
+    def getInfo(self):
+        return {
+        "summary": self.summary,
+        "src": self.src,
+        "dest": self.dest,
+        "src_name": self.src_name,
+        "dest_name": self.dest_name
+        }

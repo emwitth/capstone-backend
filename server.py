@@ -25,8 +25,14 @@ class Server:
         return jsonify("Failed")
 
     def node_packets(self):
-        json = request.get_json()
-        return jsonify(json["isIP"])
+        params = request.get_json()
+        if(params["isIP"] == True):
+            return jsonify(params)
+        else:
+            print(params)
+            packets = self.packet_sniffer.get_graph_node_packets(params["name"], params["socket"], params["fd"])
+            return jsonify(packets)
+        return jsonify(params)
 
     def initalize_urls(self):
         self.app.add_url_rule('/api/graph-data', 'graph_data', self.graph_data)

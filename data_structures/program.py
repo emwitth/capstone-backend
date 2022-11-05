@@ -1,16 +1,17 @@
-# This contain an inerface (ie class to just store data)
-# for the program pieces of the JSON that will be sent to the frontend.
+# This contain a class for the program information
+# that will be sent to the frontend.
 from constants import *
 from datetime import datetime
+from typing import List
 from data_structures.ip import IPNodeConnection
 from data_structures.link import Link
+from data_structures.packet import PacketInfo
 
 class ProgInfo:
     name:str
     socket:str
     fd: str
     timestamp:str
-    # TODO: add pid for differentiation between instances of same proc
 
     def __init__(self, name:str, socket:str, fd:str) -> None:
         self.name = name
@@ -28,10 +29,14 @@ class ProgInfo:
     def __hash__(self):
         return hash(self.name) + hash(self.socket) + hash(self.fd)
 
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
 class ProgNode:
     program:ProgInfo
     tot_packets:int
     ip_cons:dict
+    packets:List[PacketInfo]
 
     def __init__(self, program:ProgInfo, ip:str, role:str) -> None:
         self.program = program
@@ -42,12 +47,17 @@ class ProgNode:
         if ip == NO_IP:
             self.tot_packets = 0
             self.ip_cons = {}
+            self.packets = []
         else:
             self.tot_packets = 1
             self.ip_cons = {}
             self.ip_cons[ip] = self.ip_node_from_role(ip, role)
+            self.packets = []
 
-    def updateInfo(self, ip, role):
+    def addPacket(self, packet):
+        self.packets.append(packet)
+
+    def updateInfo(self, ip, role, packet):
         self.tot_packets += 1
         # if I've seen ip before, have to update
         # else, make a new one
@@ -58,6 +68,8 @@ class ProgNode:
                 self.ip_cons[ip].out_packets += 1
         else:
             self.ip_cons[ip] = self.ip_node_from_role(ip, role)
+        # add packet to list of packets
+        self.packets.append(packet)
 
     def ip_node_from_role(self, ip, role) -> IPNodeConnection:
         if role == SRC:
