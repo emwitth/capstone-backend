@@ -112,6 +112,7 @@ class PacketSniffer:
         packetInfo = PacketInfo(packet.summary(),
             src, src_name,
             dest, dest_name,
+            process.socket,
             packet
             )
         self.lock.acquire() # acquire lock
@@ -170,10 +171,14 @@ class PacketSniffer:
                 node = self.ip_nodes[ip]
                 for packet in node.packets:
                     packets.append(packet.getInfo())
-                    print(packet)
+            for prog in self.prog_nodes.values():
+                links.extend(prog.get_con_with_ip(ip))
         finally:
             self.lock.release() # release lock
-        return packets
+        return {
+            "packets": packets,
+            "links": links
+        }
 
     def get_prog_node_packets(self, name, socket, fd):
         progInfo = ProgInfo(name, socket, fd)
@@ -185,10 +190,13 @@ class PacketSniffer:
                 node = self.prog_nodes[progInfo]
                 for packet in node.packets:
                     packets.append(packet.getInfo())
-                    print(packet)
+                links.extend(node.make_con_list())
         finally:
             self.lock.release() # release lock
-        return packets
+        return {
+            "packets": packets,
+            "links": links
+        }
 
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if

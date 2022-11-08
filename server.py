@@ -27,12 +27,12 @@ class Server:
     def node_packets(self):
         params = request.get_json()
         if(params["isIP"] == True):
-            packets = self.packet_sniffer.get_ip_node_packets(params["ip"])
-            return jsonify(packets)
+            result = self.packet_sniffer.get_ip_node_packets(params["ip"])
+            return jsonify(result)
         else:
-            packets = self.packet_sniffer.get_prog_node_packets(params["name"], params["socket"], params["fd"])
-            return jsonify(packets)
-        return jsonify(params)
+            result = self.packet_sniffer.get_prog_node_packets(params["name"], params["socket"], params["fd"])
+            return jsonify(result)
+        return jsonify("Failed")
 
     def initalize_urls(self):
         self.app.add_url_rule('/api/graph-data', 'graph_data', self.graph_data)

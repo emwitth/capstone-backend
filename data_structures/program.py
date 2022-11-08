@@ -86,6 +86,13 @@ class ProgNode:
             list.append(Link(con.ip, self.program.__dict__, con.in_packets, con.out_packets).__dict__)
         return list
 
+    def get_con_with_ip(self, ip) :
+        list = []
+        for con in self.ip_cons.values():
+            if(con.ip == ip):
+                list.append(Link(con.ip, self.program.__dict__, con.in_packets, con.out_packets).__dict__)
+        return list
+
     def print_info(self):
         print(LINE)
         print(self.__str__())
