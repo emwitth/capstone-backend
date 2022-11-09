@@ -34,10 +34,16 @@ class Server:
             return jsonify(result)
         return jsonify("Failed")
 
+    def link_packets(self):
+        params = request.get_json()
+        result = self.packet_sniffer.get_link_packets(params["ip"], params["name"], params["socket"], params["fd"])
+        return jsonify(result)
+
     def initalize_urls(self):
         self.app.add_url_rule('/api/graph-data', 'graph_data', self.graph_data)
         self.app.add_url_rule('/api/sniff/<string:on>', 'sniff_controller', self.sniff_controller, methods=['POST'])
         self.app.add_url_rule('/api/node_packets', 'node_packets', self.node_packets, methods=['POST'])
+        self.app.add_url_rule('/api/link_packets', 'link_packets', self.link_packets, methods=['POST'])
 
     def start_app(self):
         self.app.run()

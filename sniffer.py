@@ -198,6 +198,20 @@ class PacketSniffer:
             "links": links
         }
 
+    def get_link_packets(self, ip, name, socket, fd):
+        progInfo = ProgInfo(name, socket, fd)
+        packets = []
+        self.lock.acquire() # acquire lock
+        try:
+            if progInfo in self.prog_nodes:
+                node = self.prog_nodes[progInfo]
+                for packet in node.packets:
+                    if (packet.src == ip) or (packet.dest == ip) :
+                        packets.append(packet.getInfo())
+        finally:
+            self.lock.release() # release lock
+        return packets;
+
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if
         packet_role = NO_ROLE
