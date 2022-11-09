@@ -12,7 +12,7 @@ from json import dumps
 
 # my modules
 from constants import *
-from data_structures.ip import IPNode, IPNodeConnection
+from data_structures.ip import IPNode
 from data_structures.program import ProgNode, ProgInfo
 from data_structures.link import Link
 from data_structures.packet import PacketInfo
@@ -29,6 +29,11 @@ class PacketSniffer:
     # items to become the JSON object
     prog_nodes = {}
     ip_nodes = {}
+
+    # data structures for hiding nodes
+    hidden_prog_nodes = {}
+    hidden_ip_nodes = {}
+    hidden_links = {}
 
     def __init__(self):
         # add the catchall node for "no process"
@@ -211,6 +216,22 @@ class PacketSniffer:
         finally:
             self.lock.release() # release lock
         return packets;
+
+    # 1. The program should be added to a ‘hidden program’ data structure
+    # 2. All enabled program nodes are searched for any ip’s hidden program is connected to
+    #  a. If none found, ip is added to ‘hidden ip’ data structure
+    def hide_prog_node(self, name, socket, fd):
+        # progInfo = ProgInfo(name, socket, fd)
+        # self.lock.acquire() # acquire lock
+        # try:
+        #     if progInfo in self.prog_nodes:
+        #         node = self.prog_nodes[progInfo]
+        #         links = node.make_con_list()
+        #         if node.make_con_list:
+        #
+        # finally:
+        #     self.lock.release() # release lock
+        pass
 
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if
