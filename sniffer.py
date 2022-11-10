@@ -12,9 +12,7 @@ from json import dumps
 
 # my modules
 from constants import *
-from data_structures.ip import IPNode
-from data_structures.program import ProgNode, ProgInfo
-from data_structures.link import Link
+from data_structures.node import ProgNode, ProgInfo, IPNode
 from data_structures.packet import PacketInfo
 
 class PacketSniffer:
@@ -122,25 +120,29 @@ class PacketSniffer:
             )
         self.lock.acquire() # acquire lock
         try:
-            # handle case where there is no associated process
-            if process.name == NO_PROC:
-                if self.emptyProcess in self.prog_nodes:
-                    self.prog_nodes[self.emptyProcess].updateInfo(their_ip, role, packetInfo)
-            # if I've seen process before, have to update
+            # if I've seen process before, get the node
             # else, make a new one
-            elif process in self.prog_nodes:
-                self.prog_nodes[process].updateInfo(their_ip, role, packetInfo)
+            progNode: ProgNode
+            if process in self.prog_nodes:
+                progNode = self.prog_nodes[process]
             else:
-                self.prog_nodes[process] = ProgNode(process, their_ip, role)
-                self.prog_nodes[process].addPacket(packetInfo)
 
-            # if I've seen ip before, have to update
+                progNode = ProgNode(process, their_ip, role)
+                self.prog_nodes[process] = progNode
+
+            # if I've seen ip before, get the node
             # else, make a new one
+            ipNode: IPNode
             if their_ip in self.ip_nodes:
-                self.ip_nodes[their_ip].updateInfo(packetInfo)
+                ipNode = self.ip_nodes[their_ip]
             else:
-                self.ip_nodes[their_ip] = IPNode(their_ip, their_name)
-                self.ip_nodes[their_ip].addPacket(packetInfo)
+                ipNode = IPNode(their_ip, their_name)
+                self.ip_nodes[their_ip] = ipNode
+
+            # update nodes
+            self.prog_nodes[process].update(ipNode, progNode, role, packetInfo)
+            self.ip_nodes[their_ip].update(ipNode, progNode, role, packetInfo)
+
         finally:
             self.lock.release() # release lock
 
@@ -175,7 +177,7 @@ class PacketSniffer:
                 print("inside")
                 node = self.ip_nodes[ip]
                 for packet in node.packets:
-                    packets.append(packet.getInfo())
+                    packets.append(packet.get_info())
             for prog in self.prog_nodes.values():
                 links.extend(prog.get_con_with_ip(ip))
         finally:
@@ -194,7 +196,7 @@ class PacketSniffer:
             if progInfo in self.prog_nodes:
                 node = self.prog_nodes[progInfo]
                 for packet in node.packets:
-                    packets.append(packet.getInfo())
+                    packets.append(packet.get_info())
                 links.extend(node.make_con_list())
         finally:
             self.lock.release() # release lock
@@ -212,7 +214,7 @@ class PacketSniffer:
                 node = self.prog_nodes[progInfo]
                 for packet in node.packets:
                     if (packet.src == ip) or (packet.dest == ip) :
-                        packets.append(packet.getInfo())
+                        packets.append(packet.get_info())
         finally:
             self.lock.release() # release lock
         return packets;

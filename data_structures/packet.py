@@ -23,7 +23,7 @@ class PacketInfo:
     def __str__(self):
         return self.summary + " -- " + self.src_name + "-->" + self.dest_name
 
-    def getInfo(self):
+    def get_info(self):
         return {
         "summary": self.summary,
         "src": self.src,
