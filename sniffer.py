@@ -153,10 +153,12 @@ class PacketSniffer:
         self.lock.acquire() # acquire lock
         try:
             for prog in self.prog_nodes.values():
-                links.extend(prog.make_con_list())
-                progs.append(prog.return_fields_for_json())
+                if prog.is_hidden == False:
+                    links.extend(prog.make_con_list())
+                    progs.append(prog.return_fields_for_json())
             for ip in self.ip_nodes.values():
-                ips.append(ip.get_info())
+                if ip.is_hidden == False:
+                    ips.append(ip.get_info())
         finally:
             self.lock.release() # release lock
         print(progs)
@@ -223,16 +225,25 @@ class PacketSniffer:
     # 2. All enabled program nodes are searched for any ip’s hidden program is connected to
     #  a. If none found, ip is added to ‘hidden ip’ data structure
     def hide_prog_node(self, name, socket, fd):
-        # progInfo = ProgInfo(name, socket, fd)
-        # self.lock.acquire() # acquire lock
-        # try:
-        #     if progInfo in self.prog_nodes:
-        #         node = self.prog_nodes[progInfo]
-        #         links = node.make_con_list()
-        #         if node.make_con_list:
-        #
-        # finally:
-        #     self.lock.release() # release lock
+        progInfo = ProgInfo(name, socket, fd)
+        self.lock.acquire() # acquire lock
+        try:
+            if progInfo in self.prog_nodes:
+                progNode = self.prog_nodes[progInfo]
+                self.hidden_prog_nodes[progInfo] = progNode
+                progNode.is_hidden = True
+                for link in progNode.cons:
+                    self.hidden_links[link] = link
+                    con = progNode.cons[link]
+                    con.is_hidden = True
+                    con.ip.cons[link] = True
+                    if len(con.ip.cons) == 1: # this is the only connection
+                        con.ip.is_hidden = True
+                        self.hidden_ip_nodes[con.ip.ip] = con.ip
+
+
+        finally:
+            self.lock.release() # release lock
         pass
 
     def process_packet(self, packet):

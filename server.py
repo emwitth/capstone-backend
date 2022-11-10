@@ -42,7 +42,7 @@ class Server:
     def hide(self):
         params = request.get_json()
         if params["type"] == "program" :
-            print("PROGRAM---------------------------------------------")
+            self.packet_sniffer.hide_prog_node(params["prog_name"], params["socket"], params["fd"])
         if params["type"] == "ip":
             print("IP--------------------------------------------------")
         if params["type"] == "link":

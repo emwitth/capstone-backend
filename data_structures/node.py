@@ -54,7 +54,7 @@ class Node(ABC):
     packets:List[PacketInfo]
 
     def __init__(self) -> None:
-        self.is_hidden = True
+        self.is_hidden = False
         self.tot_packets = 0
         self.cons = {}
         self.packets = []
@@ -85,12 +85,13 @@ class Node(ABC):
         print(len(self.cons))
         list = []
         for con in self.cons.values():
-            list.append({
-            "ip": con.ip.ip,
-            "program": con.program.program.__dict__,
-            "in_packets": con.in_packets,
-            "out_packets": con.out_packets
-            })
+            if con.is_hidden == False:
+                list.append({
+                "ip": con.ip.ip,
+                "program": con.program.program.__dict__,
+                "in_packets": con.in_packets,
+                "out_packets": con.out_packets
+                })
         return list
 
     def get_con_with_ip(self, ip) :
@@ -110,12 +111,14 @@ class Node(ABC):
         pass
 
 class Connection:
+    is_hidden: bool
     ip: Node
     program: Node
     in_packets:int
     out_packets:int
 
     def __init__(self, ip, program) -> None:
+        self.is_hidden = False
         self.ip = ip
         self.program = program
         self.in_packets = 0
