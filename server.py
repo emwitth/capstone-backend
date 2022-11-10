@@ -44,7 +44,7 @@ class Server:
         if params["type"] == "program" :
             self.packet_sniffer.hide_prog_node(params["prog_name"], params["socket"], params["fd"])
         if params["type"] == "ip":
-            print("IP--------------------------------------------------")
+            self.packet_sniffer.hide_ip_node(params["ip"])
         if params["type"] == "link":
             print("LINK------------------------------------------------")
         return params

@@ -221,9 +221,6 @@ class PacketSniffer:
             self.lock.release() # release lock
         return packets;
 
-    # 1. The program should be added to a ‘hidden program’ data structure
-    # 2. All enabled program nodes are searched for any ip’s hidden program is connected to
-    #  a. If none found, ip is added to ‘hidden ip’ data structure
     def hide_prog_node(self, name, socket, fd):
         progInfo = ProgInfo(name, socket, fd)
         self.lock.acquire() # acquire lock
@@ -233,18 +230,34 @@ class PacketSniffer:
                 self.hidden_prog_nodes[progInfo] = progNode
                 progNode.is_hidden = True
                 for link in progNode.cons:
-                    self.hidden_links[link] = link
                     con = progNode.cons[link]
+                    self.hidden_links[link] = con
                     con.is_hidden = True
-                    con.ip.cons[link] = True
+                    con.ip.cons[link].is_hidden = True
                     if len(con.ip.cons) == 1: # this is the only connection
                         con.ip.is_hidden = True
                         self.hidden_ip_nodes[con.ip.ip] = con.ip
+        finally:
+            self.lock.release() # release lock
 
+    def hide_ip_node(self, ip):
+        self.lock.acquire() # acquire lock
+        try:
+            if ip in self.ip_nodes:
+                ipNode = self.ip_nodes[ip]
+                self.hidden_ip_nodes[ip] = ipNode
+                ipNode.is_hidden = True
+                for link in ipNode.cons:
+                    con = ipNode.cons[link]
+                    self.hidden_links[link] = con
+                    con.is_hidden = True
+                    con.program.cons[link].is_hidden = True
+                    if len(con.program.cons) == 1: # this is the only connection
+                        con.program.is_hidden = True
+                        self.hidden_prog_nodes[con.program.program] = con.program
 
         finally:
             self.lock.release() # release lock
-        pass
 
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if
