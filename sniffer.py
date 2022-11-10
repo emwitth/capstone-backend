@@ -12,7 +12,7 @@ from json import dumps
 
 # my modules
 from constants import *
-from data_structures.node import ProgNode, ProgInfo, IPNode
+from data_structures.node import ProgNode, ProgInfo, IPNode, Link
 from data_structures.packet import PacketInfo
 
 class PacketSniffer:
@@ -237,6 +237,9 @@ class PacketSniffer:
                     if len(con.ip.cons) == 1: # this is the only connection
                         con.ip.is_hidden = True
                         self.hidden_ip_nodes[con.ip.ip] = con.ip
+                    elif con.ip.are_all_links_hidden():
+                        con.ip.is_hidden = True
+                        self.hidden_ip_nodes[con.ip.ip] = con.ip
         finally:
             self.lock.release() # release lock
 
@@ -255,7 +258,35 @@ class PacketSniffer:
                     if len(con.program.cons) == 1: # this is the only connection
                         con.program.is_hidden = True
                         self.hidden_prog_nodes[con.program.program] = con.program
+                    elif con.program.are_all_links_hidden():
+                        con.program.is_hidden = True
+                        self.hidden_prog_nodes[con.program.program] = con.program
+        finally:
+            self.lock.release() # release lock
 
+    def hide_link(self, ip, name, socket, fd):
+        progInfo = ProgInfo(name, socket, fd)
+        link = Link(ip, progInfo)
+        self.lock.acquire() # acquire lock
+        try:
+            if progInfo in self.prog_nodes:
+                progNode = self.prog_nodes[progInfo]
+                progNode.cons[link].is_hidden = True
+                if len(progNode.cons) == 1: # this is the only connection
+                    progNode.is_hidden = True
+                    self.hidden_prog_nodes[progNode.program] = progNode
+                if progNode.are_all_links_hidden():
+                    progNode.is_hidden = True
+                    self.hidden_prog_nodes[progNode.program] = progNode
+            if ip in self.ip_nodes:
+                ipNode = self.ip_nodes[ip]
+                ipNode.cons[link].is_hidden = True
+                if len(ipNode.cons) == 1: # this is the only connection
+                    ipNode.is_hidden = True
+                    self.hidden_ip_nodes[ipNode.ip] = ipNode
+                elif ipNode.are_all_links_hidden():
+                    ipNode.is_hidden = True
+                    self.hidden_ip_nodes[ipNode.ip] = ipNode
         finally:
             self.lock.release() # release lock
 

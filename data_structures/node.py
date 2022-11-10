@@ -80,6 +80,13 @@ class Node(ABC):
         else:
             con.update(0, 1)
 
+    def are_all_links_hidden(self):
+        all_hidden = True
+        for con in self.cons.values():
+            if con.is_hidden == False:
+                all_hidden = False
+        return all_hidden
+
     def make_con_list(self):
         print("IN MAKE CON LIST")
         print(len(self.cons))

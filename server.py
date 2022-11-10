@@ -46,7 +46,7 @@ class Server:
         if params["type"] == "ip":
             self.packet_sniffer.hide_ip_node(params["ip"])
         if params["type"] == "link":
-            print("LINK------------------------------------------------")
+            self.packet_sniffer.hide_link(params["ip"], params["prog_name"], params["socket"], params["fd"])
         return params
 
     def initalize_urls(self):
