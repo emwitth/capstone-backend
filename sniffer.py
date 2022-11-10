@@ -126,7 +126,6 @@ class PacketSniffer:
             if process in self.prog_nodes:
                 progNode = self.prog_nodes[process]
             else:
-
                 progNode = ProgNode(process, their_ip, role)
                 self.prog_nodes[process] = progNode
 
@@ -140,8 +139,21 @@ class PacketSniffer:
                 self.ip_nodes[their_ip] = ipNode
 
             # update nodes
-            self.prog_nodes[process].update(ipNode, progNode, role, packetInfo)
-            self.ip_nodes[their_ip].update(ipNode, progNode, role, packetInfo)
+            progNode.update(ipNode, progNode, role, packetInfo)
+            ipNode.update(ipNode, progNode, role, packetInfo)
+
+
+            print(LINE)
+            print(LINE)
+            print(type(progNode))
+            print(progNode)
+            # print("progNode is hidden {}, ip node is hidden {} --------".format(progNode.is_hidden, ipNode.is_hidden))
+            # print("{}: {}, {}, {}, {}".format(progNode.get_con_with_ip(ipNode.ip), ipNode.ip, progNode.program, progNode.program.socket, progNode.program.fd))
+            # hide link if one of the nodes are hidden
+            if progNode.is_hidden:
+                self.hide_link(ipNode.ip, progNode.program.name, progNode.program.socket, progNode.program.fd)
+            elif ipNode.is_hidden:
+                self.hide_link(ipNode.ip, progNode.program.name, progNode.program.socket, progNode.program.fd)
 
         finally:
             self.lock.release() # release lock
@@ -161,7 +173,7 @@ class PacketSniffer:
                     ips.append(ip.get_info())
         finally:
             self.lock.release() # release lock
-        print(progs)
+        # print(progs)
         return {
         "links": links,
         "ip_nodes": ips,
