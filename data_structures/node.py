@@ -47,6 +47,9 @@ class Link:
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
 
+    def __str__(self):
+        return self.ip + "<>" + self.program.__str__()
+
 class Node(ABC):
     is_hidden: bool
     tot_packets:int
@@ -88,8 +91,6 @@ class Node(ABC):
         return all_hidden
 
     def make_con_list(self):
-        print("IN MAKE CON LIST")
-        print(len(self.cons))
         list = []
         for con in self.cons.values():
             if con.is_hidden == False:
