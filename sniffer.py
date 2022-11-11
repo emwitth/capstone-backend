@@ -184,11 +184,8 @@ class PacketSniffer:
         packets = []
         links = []
         self.lock.acquire() # acquire lock
-        print("IP---------------------")
-        print(ip)
         try:
             if ip in self.ip_nodes:
-                print("inside")
                 node = self.ip_nodes[ip]
                 for packet in node.packets:
                     packets.append(packet.get_info())
@@ -238,15 +235,19 @@ class PacketSniffer:
         self.lock.acquire() # acquire lock
         try:
             if progInfo in self.prog_nodes:
+                # get progNode object, mark as hidden, add to structure
                 progNode = self.prog_nodes[progInfo]
                 self.hidden_prog_nodes[progInfo] = progNode
                 progNode.is_hidden = True
+                # mark all links as hidden
                 for link in progNode.cons:
                     con = progNode.cons[link]
                     self.hidden_links[link] = con
                     con.is_hidden = True
+                    # mark this link as hidden in the connected ipNode
                     con.ip.cons[link].is_hidden = True
-                    if len(con.ip.cons) == 1: # this is the only connection
+                    # hide the connected ipNode if this is the only connection
+                    if len(con.ip.cons) == 1:
                         con.ip.is_hidden = True
                         self.hidden_ip_nodes[con.ip.ip] = con.ip
                     elif con.ip.are_all_links_hidden():
@@ -259,15 +260,19 @@ class PacketSniffer:
         self.lock.acquire() # acquire lock
         try:
             if ip in self.ip_nodes:
+                # get ipNode object, mark as hidden, add to structure
                 ipNode = self.ip_nodes[ip]
                 self.hidden_ip_nodes[ip] = ipNode
                 ipNode.is_hidden = True
+                # mark all links as hidden
                 for link in ipNode.cons:
                     con = ipNode.cons[link]
                     self.hidden_links[link] = con
                     con.is_hidden = True
+                    # mark this link as hidden in the connected progNode
                     con.program.cons[link].is_hidden = True
-                    if len(con.program.cons) == 1: # this is the only connection
+                    # hide the connected progNode if this is the only connection
+                    if len(con.program.cons) == 1:
                         con.program.is_hidden = True
                         self.hidden_prog_nodes[con.program.program] = con.program
                     elif con.program.are_all_links_hidden():
@@ -282,18 +287,22 @@ class PacketSniffer:
         self.lock.acquire() # acquire lock
         try:
             if progInfo in self.prog_nodes:
+                # hide this link in the progNode
                 progNode = self.prog_nodes[progInfo]
                 progNode.cons[link].is_hidden = True
-                if len(progNode.cons) == 1: # this is the only connection
+                # if this is the progNode's only connection, hide it
+                if len(progNode.cons) == 1:
                     progNode.is_hidden = True
                     self.hidden_prog_nodes[progNode.program] = progNode
                 if progNode.are_all_links_hidden():
                     progNode.is_hidden = True
                     self.hidden_prog_nodes[progNode.program] = progNode
             if ip in self.ip_nodes:
+                # hide this link in the ipNode
                 ipNode = self.ip_nodes[ip]
                 ipNode.cons[link].is_hidden = True
-                if len(ipNode.cons) == 1: # this is the only connection
+                # if this is the ipNode's only connection, hide it
+                if len(ipNode.cons) == 1:
                     ipNode.is_hidden = True
                     self.hidden_ip_nodes[ipNode.ip] = ipNode
                 elif ipNode.are_all_links_hidden():
