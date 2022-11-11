@@ -12,9 +12,7 @@ from json import dumps
 
 # my modules
 from constants import *
-from data_structures.ip import IPNode, IPNodeConnection
-from data_structures.program import ProgNode, ProgInfo
-from data_structures.link import Link
+from data_structures.node import ProgNode, ProgInfo, IPNode, Link
 from data_structures.packet import PacketInfo
 
 class PacketSniffer:
@@ -29,6 +27,11 @@ class PacketSniffer:
     # items to become the JSON object
     prog_nodes = {}
     ip_nodes = {}
+
+    # data structures for hiding nodes
+    hidden_prog_nodes = {}
+    hidden_ip_nodes = {}
+    hidden_links = {}
 
     def __init__(self):
         # add the catchall node for "no process"
@@ -117,25 +120,33 @@ class PacketSniffer:
             )
         self.lock.acquire() # acquire lock
         try:
-            # handle case where there is no associated process
-            if process.name == NO_PROC:
-                if self.emptyProcess in self.prog_nodes:
-                    self.prog_nodes[self.emptyProcess].updateInfo(their_ip, role, packetInfo)
-            # if I've seen process before, have to update
+            # if I've seen process before, get the node
             # else, make a new one
-            elif process in self.prog_nodes:
-                self.prog_nodes[process].updateInfo(their_ip, role, packetInfo)
+            progNode: ProgNode
+            if process in self.prog_nodes:
+                progNode = self.prog_nodes[process]
             else:
-                self.prog_nodes[process] = ProgNode(process, their_ip, role)
-                self.prog_nodes[process].addPacket(packetInfo)
+                progNode = ProgNode(process, their_ip, role)
+                self.prog_nodes[process] = progNode
 
-            # if I've seen ip before, have to update
+            # if I've seen ip before, get the node
             # else, make a new one
+            ipNode: IPNode
             if their_ip in self.ip_nodes:
-                self.ip_nodes[their_ip].updateInfo(packetInfo)
+                ipNode = self.ip_nodes[their_ip]
             else:
-                self.ip_nodes[their_ip] = IPNode(their_ip, their_name)
-                self.ip_nodes[their_ip].addPacket(packetInfo)
+                ipNode = IPNode(their_ip, their_name)
+                self.ip_nodes[their_ip] = ipNode
+
+            # update nodes
+            progNode.update(ipNode, progNode, role, packetInfo)
+            ipNode.update(ipNode, progNode, role, packetInfo)
+
+            # hide link if one of the nodes are hidden
+            if progNode.is_hidden or ipNode.is_hidden:
+                self.hide_link(ipNode.ip, progNode.program.name,
+                progNode.program.socket, progNode.program.fd, True)
+
         finally:
             self.lock.release() # release lock
 
@@ -146,13 +157,15 @@ class PacketSniffer:
         self.lock.acquire() # acquire lock
         try:
             for prog in self.prog_nodes.values():
-                links.extend(prog.make_con_list())
-                progs.append(prog.return_fields_for_json())
+                if prog.is_hidden == False:
+                    links.extend(prog.make_con_list())
+                    progs.append(prog.return_fields_for_json())
             for ip in self.ip_nodes.values():
-                ips.append(ip.get_info())
+                if ip.is_hidden == False:
+                    ips.append(ip.get_info())
         finally:
             self.lock.release() # release lock
-        print(progs)
+        # print(progs)
         return {
         "links": links,
         "ip_nodes": ips,
@@ -163,14 +176,11 @@ class PacketSniffer:
         packets = []
         links = []
         self.lock.acquire() # acquire lock
-        print("IP---------------------")
-        print(ip)
         try:
             if ip in self.ip_nodes:
-                print("inside")
                 node = self.ip_nodes[ip]
                 for packet in node.packets:
-                    packets.append(packet.getInfo())
+                    packets.append(packet.get_info())
             for prog in self.prog_nodes.values():
                 links.extend(prog.get_con_with_ip(ip))
         finally:
@@ -189,7 +199,7 @@ class PacketSniffer:
             if progInfo in self.prog_nodes:
                 node = self.prog_nodes[progInfo]
                 for packet in node.packets:
-                    packets.append(packet.getInfo())
+                    packets.append(packet.get_info())
                 links.extend(node.make_con_list())
         finally:
             self.lock.release() # release lock
@@ -207,10 +217,93 @@ class PacketSniffer:
                 node = self.prog_nodes[progInfo]
                 for packet in node.packets:
                     if (packet.src == ip) or (packet.dest == ip) :
-                        packets.append(packet.getInfo())
+                        packets.append(packet.get_info())
         finally:
             self.lock.release() # release lock
         return packets;
+
+    def hide_prog_node(self, name, socket, fd):
+        progInfo = ProgInfo(name, socket, fd)
+        self.lock.acquire() # acquire lock
+        try:
+            if progInfo in self.prog_nodes:
+                # get progNode object, mark as hidden, add to structure
+                progNode = self.prog_nodes[progInfo]
+                self.hidden_prog_nodes[progInfo] = progNode
+                progNode.is_hidden = True
+                # mark all links as hidden
+                for link in progNode.cons:
+                    con = progNode.cons[link]
+                    self.hidden_links[link] = con
+                    con.is_hidden = True
+                    # mark this link as hidden in the connected ipNode
+                    con.ip.cons[link].is_hidden = True
+                    # hide the connected ipNode if this is the only connection
+                    if len(con.ip.cons) == 1:
+                        con.ip.is_hidden = True
+                        self.hidden_ip_nodes[con.ip.ip] = con.ip
+                    elif con.ip.are_all_links_hidden():
+                        con.ip.is_hidden = True
+                        self.hidden_ip_nodes[con.ip.ip] = con.ip
+        finally:
+            self.lock.release() # release lock
+
+    def hide_ip_node(self, ip):
+        self.lock.acquire() # acquire lock
+        try:
+            if ip in self.ip_nodes:
+                # get ipNode object, mark as hidden, add to structure
+                ipNode = self.ip_nodes[ip]
+                self.hidden_ip_nodes[ip] = ipNode
+                ipNode.is_hidden = True
+                # mark all links as hidden
+                for link in ipNode.cons:
+                    con = ipNode.cons[link]
+                    self.hidden_links[link] = con
+                    con.is_hidden = True
+                    # mark this link as hidden in the connected progNode
+                    con.program.cons[link].is_hidden = True
+                    # hide the connected progNode if this is the only connection
+                    if len(con.program.cons) == 1:
+                        con.program.is_hidden = True
+                        self.hidden_prog_nodes[con.program.program] = con.program
+                    elif con.program.are_all_links_hidden():
+                        con.program.is_hidden = True
+                        self.hidden_prog_nodes[con.program.program] = con.program
+        finally:
+            self.lock.release() # release lock
+
+    def hide_link(self, ip, name, socket, fd, isFromPacketUpdate = False):
+        progInfo = ProgInfo(name, socket, fd)
+        link = Link(ip, progInfo)
+        if not isFromPacketUpdate:
+            self.lock.acquire() # acquire lock
+        try:
+            if progInfo in self.prog_nodes:
+                # hide this link in the progNode
+                progNode = self.prog_nodes[progInfo]
+                progNode.cons[link].is_hidden = True
+                # if this is the progNode's only connection, hide it
+                if len(progNode.cons) == 1:
+                    progNode.is_hidden = True
+                    self.hidden_prog_nodes[progNode.program] = progNode
+                if progNode.are_all_links_hidden():
+                    progNode.is_hidden = True
+                    self.hidden_prog_nodes[progNode.program] = progNode
+            if ip in self.ip_nodes:
+                # hide this link in the ipNode
+                ipNode = self.ip_nodes[ip]
+                ipNode.cons[link].is_hidden = True
+                # if this is the ipNode's only connection, hide it
+                if len(ipNode.cons) == 1:
+                    ipNode.is_hidden = True
+                    self.hidden_ip_nodes[ipNode.ip] = ipNode
+                elif ipNode.are_all_links_hidden():
+                    ipNode.is_hidden = True
+                    self.hidden_ip_nodes[ipNode.ip] = ipNode
+        finally:
+            if not isFromPacketUpdate:
+                self.lock.release() # release lock
 
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if
