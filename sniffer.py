@@ -283,6 +283,8 @@ class PacketSniffer:
                 # hide this link in the progNode
                 progNode = self.prog_nodes[progInfo]
                 progNode.cons[link].is_hidden = True
+                # add this link to the hidden links List
+                self.hidden_links[link] = progNode.cons[link]
                 # if this is the progNode's only connection, hide it
                 if len(progNode.cons) == 1:
                     progNode.is_hidden = True
