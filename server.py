@@ -50,7 +50,7 @@ class Server:
         return params
 
     def get_hidden_items(self):
-        return jsonify("hidden items");
+        return jsonify(self.packet_sniffer.get_hidden_items());
 
     def initalize_urls(self):
         self.app.add_url_rule('/api/graph-data', 'graph_data', self.graph_data)
