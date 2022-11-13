@@ -283,6 +283,8 @@ class PacketSniffer:
                 # hide this link in the progNode
                 progNode = self.prog_nodes[progInfo]
                 progNode.cons[link].is_hidden = True
+                # add this link to the hidden links List
+                self.hidden_links[link] = progNode.cons[link]
                 # if this is the progNode's only connection, hide it
                 if len(progNode.cons) == 1:
                     progNode.is_hidden = True
@@ -304,6 +306,26 @@ class PacketSniffer:
         finally:
             if not isFromPacketUpdate:
                 self.lock.release() # release lock
+
+    def get_hidden_items(self):
+        prog_nodes = []
+        ip_nodes = []
+        links = []
+        self.lock.acquire() # acquire lock
+        try:
+            for prog in self.hidden_prog_nodes.values():
+                prog_nodes.append(prog.return_fields_for_json())
+            for ip in self.hidden_ip_nodes.values():
+                ip_nodes.append(ip.get_info())
+            for con in self.hidden_links.values():
+                links.append(con.get_info())
+        finally:
+            self.lock.release() # release lock
+        return {
+        "prog_nodes": prog_nodes,
+        "ip_nodes": ip_nodes,
+        "links": links
+        }
 
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if

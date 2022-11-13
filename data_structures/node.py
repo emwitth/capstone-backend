@@ -133,8 +133,17 @@ class Connection:
         self.out_packets = 0
 
     def update(self, in_packets, out_packets):
-        self.in_packets += self.in_packets
-        self.out_packets += self.out_packets
+        self.in_packets += in_packets
+        self.out_packets += out_packets
+
+    def get_info(self):
+        return {
+        "program": self.program.program.__dict__,
+        "ip_name": self.ip.name,
+        "ip": self.ip.ip,
+        "in_packets": self.in_packets,
+        "out_packets": self.out_packets
+        }
 
     def __str__(self):
         return "{} <> {} - in:{}, out:{}".format(self.ip.ip, self.program, self.in_packets, self.out_packets)

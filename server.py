@@ -49,12 +49,16 @@ class Server:
             self.packet_sniffer.hide_link(params["ip"], params["prog_name"], params["socket"], params["fd"])
         return params
 
+    def get_hidden_items(self):
+        return jsonify(self.packet_sniffer.get_hidden_items());
+
     def initalize_urls(self):
         self.app.add_url_rule('/api/graph-data', 'graph_data', self.graph_data)
         self.app.add_url_rule('/api/sniff/<string:on>', 'sniff_controller', self.sniff_controller, methods=['POST'])
         self.app.add_url_rule('/api/node_packets', 'node_packets', self.node_packets, methods=['POST'])
         self.app.add_url_rule('/api/link_packets', 'link_packets', self.link_packets, methods=['POST'])
         self.app.add_url_rule('/api/hide', 'hide', self.hide, methods=['POST'])
+        self.app.add_url_rule('/api/hidden_items', 'get_hidden_items', self.get_hidden_items)
 
     def start_app(self):
         self.app.run()
