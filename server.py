@@ -58,6 +58,9 @@ class Server:
             self.packet_sniffer.show_prog_node(params["prog_name"], params["socket"], params["fd"])
         if params["type"] == "ip":
             self.packet_sniffer.show_ip_node(params["ip"])
+        if params["type"] == "link":
+            self.packet_sniffer.show_link(params["ip"], params["prog_name"], params["socket"], params["fd"])
+        # so the page can update with the new hidden items
         return jsonify(self.packet_sniffer.get_hidden_items());
 
     def initalize_urls(self):

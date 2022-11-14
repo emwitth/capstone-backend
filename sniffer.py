@@ -374,6 +374,34 @@ class PacketSniffer:
         finally:
             self.lock.release() # release lock
 
+    def show_link(self, ip, name, socket, fd):
+        progInfo = ProgInfo(name, socket, fd)
+        link = Link(ip, progInfo)
+        self.lock.acquire() # acquire lock
+        try:
+            if progInfo in self.prog_nodes:
+                # show this link in the progNode
+                progNode = self.prog_nodes[progInfo]
+                progNode.cons[link].is_hidden = False
+                # remove this link from the hidden links List
+                self.hidden_links.pop(link)
+                # show the progNode
+                progNode.is_hidden = False
+                # remove from structure if there
+                if progNode.program in self.hidden_prog_nodes:
+                    self.hidden_prog_nodes.pop(progNode.program)
+            if ip in self.ip_nodes:
+                # show this link in the ipNode
+                ipNode = self.ip_nodes[ip]
+                ipNode.cons[link].is_hidden = False
+                # show the progNode ipNode
+                ipNode.is_hidden = False
+                # remove from structure if there
+                if ipNode.ip in self.hidden_ip_nodes:
+                    self.hidden_ip_nodes.pop(ipNode.ip)
+        finally:
+            self.lock.release() # release lock
+
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if
         packet_role = NO_ROLE
