@@ -327,6 +327,81 @@ class PacketSniffer:
         "links": links
         }
 
+    def show_prog_node(self, name, socket, fd):
+        progInfo = ProgInfo(name, socket, fd)
+        self.lock.acquire() # acquire lock
+        try:
+            if progInfo in self.prog_nodes:
+                # get progNode object, mark as shown, remove from structure
+                progNode = self.prog_nodes[progInfo]
+                self.hidden_prog_nodes.pop(progInfo)
+                progNode.is_hidden = False
+                # mark all links as shown
+                for link in progNode.cons:
+                    con = progNode.cons[link]
+                    self.hidden_links.pop(link)
+                    con.is_hidden = False
+                    # mark this link as shown in the connected ipNode
+                    con.ip.cons[link].is_hidden = False
+                    # show the connected ipNode
+                    con.ip.is_hidden = False
+                    # remove from structure if there
+                    if con.ip.ip in self.hidden_ip_nodes:
+                        self.hidden_ip_nodes.pop(con.ip.ip)
+        finally:
+            self.lock.release() # release lock
+
+    def show_ip_node(self, ip):
+        self.lock.acquire() # acquire lock
+        try:
+            if ip in self.ip_nodes:
+                # get ipNode object, mark as shown, remove from structure
+                ipNode = self.ip_nodes[ip]
+                self.hidden_ip_nodes.pop(ip)
+                ipNode.is_hidden = False
+                # mark all links as shown
+                for link in ipNode.cons:
+                    con = ipNode.cons[link]
+                    self.hidden_links.pop(link)
+                    con.is_hidden = False
+                    # mark this link as shown in the connected progNode
+                    con.program.cons[link].is_hidden = False
+                    # show the connected progNode
+                    con.program.is_hidden = False
+                    # remove from structure if there
+                    if con.program.program in self.hidden_prog_nodes:
+                        self.hidden_prog_nodes.pop(con.program.program)
+        finally:
+            self.lock.release() # release lock
+
+    def show_link(self, ip, name, socket, fd):
+        progInfo = ProgInfo(name, socket, fd)
+        link = Link(ip, progInfo)
+        self.lock.acquire() # acquire lock
+        try:
+            if progInfo in self.prog_nodes:
+                # show this link in the progNode
+                progNode = self.prog_nodes[progInfo]
+                progNode.cons[link].is_hidden = False
+                # remove this link from the hidden links List
+                self.hidden_links.pop(link)
+                # show the progNode
+                progNode.is_hidden = False
+                # remove from structure if there
+                if progNode.program in self.hidden_prog_nodes:
+                    self.hidden_prog_nodes.pop(progNode.program)
+            if ip in self.ip_nodes:
+                # show this link in the ipNode
+                ipNode = self.ip_nodes[ip]
+                ipNode.cons[link].is_hidden = False
+                # show the progNode ipNode
+                ipNode.is_hidden = False
+                # remove from structure if there
+                if ipNode.ip in self.hidden_ip_nodes:
+                    self.hidden_ip_nodes.pop(ipNode.ip)
+        finally:
+            self.lock.release() # release lock
+
     def process_packet(self, packet):
         # variables 'global' to this function so I can use them outside of if
         packet_role = NO_ROLE

@@ -52,6 +52,17 @@ class Server:
     def get_hidden_items(self):
         return jsonify(self.packet_sniffer.get_hidden_items());
 
+    def show(self):
+        params = request.get_json()
+        if params["type"] == "program" :
+            self.packet_sniffer.show_prog_node(params["prog_name"], params["socket"], params["fd"])
+        if params["type"] == "ip":
+            self.packet_sniffer.show_ip_node(params["ip"])
+        if params["type"] == "link":
+            self.packet_sniffer.show_link(params["ip"], params["prog_name"], params["socket"], params["fd"])
+        # so the page can update with the new hidden items
+        return jsonify(self.packet_sniffer.get_hidden_items());
+
     def initalize_urls(self):
         self.app.add_url_rule('/api/graph-data', 'graph_data', self.graph_data)
         self.app.add_url_rule('/api/sniff/<string:on>', 'sniff_controller', self.sniff_controller, methods=['POST'])
@@ -59,6 +70,7 @@ class Server:
         self.app.add_url_rule('/api/link_packets', 'link_packets', self.link_packets, methods=['POST'])
         self.app.add_url_rule('/api/hide', 'hide', self.hide, methods=['POST'])
         self.app.add_url_rule('/api/hidden_items', 'get_hidden_items', self.get_hidden_items)
+        self.app.add_url_rule('/api/show', 'show', self.show, methods=['POST'])
 
     def start_app(self):
         self.app.run()
