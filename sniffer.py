@@ -448,6 +448,8 @@ class PacketSniffer:
                 (
                 packet_role, process
                 ))
+        if PRINT_PACKET_INFO:
+            print(scapy.utils.hexdump(packet))
         # update count we have stored to send to frontend
         self.update_node_info(src_ip, dest_ip, packet_role,
                         src_hostname, dest_hostname, process, packet);

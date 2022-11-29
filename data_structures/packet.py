@@ -1,6 +1,8 @@
 # This contain a class for the packet information
 # that will be sent to the frontend.
 from scapy.all import packet
+from scapy.utils import hexdump
+
 
 class PacketInfo:
     summary:str
@@ -24,11 +26,13 @@ class PacketInfo:
         return self.summary + " -- " + self.src_name + "-->" + self.dest_name
 
     def get_info(self):
+
         return {
         "summary": self.summary,
         "src": self.src,
         "dest": self.dest,
         "src_name": self.src_name,
         "dest_name": self.dest_name,
-        "port": self.port
+        "port": self.port,
+        "hex": hexdump(self.packet, True)
         }
