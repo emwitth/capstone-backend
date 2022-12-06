@@ -4,7 +4,7 @@
 import netifaces
 from scapy.all import *
 from socket import gethostbyaddr
-from psutil import net_connections, Process
+from psutil import net_connections, Process, process_iter
 from threading import Lock
 from datetime import datetime
 from sys import stdin
@@ -19,7 +19,7 @@ class PacketSniffer:
     emptyProcess: ProgInfo
     seen_ips = {}
     ip_nodes = {}
-    proc_nodes = {}
+    port_procs = {}
     my_ip = ""
     capture: AsyncSniffer
     lock: Lock
@@ -80,15 +80,15 @@ class PacketSniffer:
         # search for socket in current connections
         for connection in net_connections():
             if connection.laddr.port == socket:
-                # update info if is in proc_nodes, else make new info class
+                # update info if is in port_procs, else make new info class
                 self.lock.acquire() # acquire lock
                 try:
-                    if socket in self.proc_nodes:
-                        self.proc_nodes[socket].update_timestamp()
+                    if socket in self.port_procs:
+                        self.port_procs[socket].update_timestamp()
                     else:
                         process = ProgInfo(Process(connection.pid).name(), socket, connection.pid)
-                        self.proc_nodes[socket] = process
-                    toReturn = self.proc_nodes[socket]
+                        self.port_procs[socket] = process
+                    toReturn = self.port_procs[socket]
                 finally:
                     self.lock.release() # release lock
                 return toReturn
@@ -97,11 +97,21 @@ class PacketSniffer:
         if process_and_timestamp == "":
             self.lock.acquire() # acquire lock
             try:
-                if socket in self.proc_nodes:
-                    toReturn = self.proc_nodes[socket]
+                if socket in self.port_procs:
+                    toReturn = self.port_procs[socket]
             finally:
                 self.lock.release() # release lock
         return toReturn
+
+    def associate_ICMP_id_with_process(self, id) -> ProgInfo:
+        print(id)
+        toReturn = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
+        for proc in process_iter():
+            if(proc.pid == id):
+                print(proc)
+                toReturn = ProgInfo(proc.name(), NO_PORT, proc.pid)
+        return toReturn
+
 
     def update_node_info(self, src, dest, role, src_name, dest_name, process, packet):
         # decide where I am src or dest and set appropriately
@@ -165,7 +175,7 @@ class PacketSniffer:
                     ips.append(ip.get_info())
         finally:
             self.lock.release() # release lock
-        # print(progs)
+        print(progs)
         return {
         "links": links,
         "ip_nodes": ips,
@@ -435,7 +445,7 @@ class PacketSniffer:
             if PRINT_PACKET_INFO :
                 print("src: ", src_ip, src_hostname)
                 print("dest: ", dest_ip, dest_hostname)
-        # parse the process associated with the packet
+        # determine the process associated with the packet if TCP
         if TCP in packet:
             if packet_role == SRC:
                 port = packet[TCP].sport
@@ -448,6 +458,10 @@ class PacketSniffer:
                 (
                 packet_role, process
                 ))
+        # determine the process associated with the packet if ICMP (ping)
+        if ICMP in packet:
+            process = self.associate_ICMP_id_with_process(packet[ICMP].id)
+
         if PRINT_PACKET_INFO:
             print(scapy.utils.hexdump(packet))
         # update count we have stored to send to frontend

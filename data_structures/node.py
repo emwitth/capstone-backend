@@ -27,7 +27,7 @@ class ProgInfo:
         return "{}({}, socket:{}) as of {}".format(self.name, self.fd, self.socket, self.timestamp)
 
     def __hash__(self):
-        return hash(self.name) + hash(self.socket) + hash(self.fd)
+        return hash(self.name) + hash(self.fd)
 
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
