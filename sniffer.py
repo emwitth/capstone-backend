@@ -468,6 +468,8 @@ class PacketSniffer:
         # add ARP requests into own 'process'
         if ARP in packet:
             process = ProgInfo(ARP_NODE_NAME, NO_PORT, NO_PROC)
+        if DNS in packet:
+            process = ProgInfo(DNS_NODE_NAME, NO_PORT, NO_PROC)
 
         if PRINT_PACKET_HEX:
             print(scapy.utils.hexdump(packet))

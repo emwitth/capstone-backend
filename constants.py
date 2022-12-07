@@ -21,6 +21,7 @@ NO_HOSTNAME = "no hostname"
 
 # for names of non-process/ip nodes
 ARP_NODE_NAME = "ARP PACKETS"
+DNS_NODE_NAME = "DNS PACKETS"
 
 # for console printing
 LINE = "--------------------------------"
