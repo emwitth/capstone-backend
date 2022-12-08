@@ -104,11 +104,9 @@ class PacketSniffer:
         return toReturn
 
     def associate_ICMP_id_with_process(self, id) -> ProgInfo:
-        print(id)
         toReturn = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
         for proc in process_iter():
             if(proc.pid == id):
-                print(proc)
                 toReturn = ProgInfo(proc.name(), NO_PORT, proc.pid)
         return toReturn
 
@@ -461,8 +459,11 @@ class PacketSniffer:
         # determine the process associated with the packet if ICMP (ping)
         if ICMP in packet:
             process = self.associate_ICMP_id_with_process(packet[ICMP].id)
+        # add ARP requests into own 'process'
+        if ARP in packet:
+            process = ProgInfo(ARP_NODE_NAME, NO_PORT, NO_PROC)
 
-        if PRINT_PACKET_INFO:
+        if PRINT_PACKET_HEX:
             print(scapy.utils.hexdump(packet))
         # update count we have stored to send to frontend
         self.update_node_info(src_ip, dest_ip, packet_role,
