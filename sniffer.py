@@ -20,6 +20,7 @@ class PacketSniffer:
     seen_ips = {}
     ip_nodes = {}
     port_procs = {}
+    icmp_procs = {}
     my_ip = ""
     capture: AsyncSniffer
     lock: Lock
@@ -104,10 +105,15 @@ class PacketSniffer:
         return toReturn
 
     def associate_ICMP_id_with_process(self, id) -> ProgInfo:
-        toReturn = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
+        # find process by id
         for proc in process_iter():
             if(proc.pid == id):
-                toReturn = ProgInfo(proc.name(), NO_PORT, proc.pid)
+                self.icmp_procs[id] = ProgInfo(proc.name(), NO_PORT, proc.pid)
+        # deal with if not found process
+        toReturn = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
+        if id in self.icmp_procs:
+            toReturn = self.icmp_procs[id]
+            self.icmp_procs[id].update_timestamp()
         return toReturn
 
 
