@@ -130,6 +130,8 @@ class PacketSniffer:
             src, src_name,
             dest, dest_name,
             process.socket,
+            process.name,
+            process.fd,
             packet
             )
         self.lock.acquire() # acquire lock

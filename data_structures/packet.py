@@ -11,22 +11,25 @@ class PacketInfo:
     src_name:str
     dest_name:str
     port:str
+    program_name:str
+    program_fd:str
     packet: packet.Packet
 
-    def __init__(self, summary:str, src:str, src_name:str, dest:str, dest_name:str, port:str, packet:packet.Packet):
+    def __init__(self, summary:str, src:str, src_name:str, dest:str, dest_name:str, port:str, program_name:str, program_fd:str, packet:packet.Packet):
         self.summary = summary
         self.src = src
         self.dest = dest
         self.src_name = src_name
         self.dest_name = dest_name
         self.port = port
+        self.program_name = program_name
+        self.program_fd = program_fd
         self.packet = packet
 
     def __str__(self):
         return self.summary + " -- " + self.src_name + "-->" + self.dest_name
 
     def get_info(self):
-
         return {
         "summary": self.summary,
         "src": self.src,
@@ -34,5 +37,7 @@ class PacketInfo:
         "src_name": self.src_name,
         "dest_name": self.dest_name,
         "port": self.port,
+        "program_name": self.program_name,
+        "program_fd": self.program_fd,
         "hex": hexdump(self.packet, True)
         }
