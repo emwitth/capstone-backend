@@ -30,23 +30,23 @@ class Server:
             result = self.packet_sniffer.get_ip_node_packets(params["ip"])
             return jsonify(result)
         else:
-            result = self.packet_sniffer.get_prog_node_packets(params["name"], params["socket"], params["fd"])
+            result = self.packet_sniffer.get_prog_node_packets(params["name"], params["port"], params["fd"])
             return jsonify(result)
         return jsonify("Failed")
 
     def link_packets(self):
         params = request.get_json()
-        result = self.packet_sniffer.get_link_packets(params["ip"], params["name"], params["socket"], params["fd"])
+        result = self.packet_sniffer.get_link_packets(params["ip"], params["name"], params["port"], params["fd"])
         return jsonify(result)
 
     def hide(self):
         params = request.get_json()
         if params["type"] == "program" :
-            self.packet_sniffer.hide_prog_node(params["prog_name"], params["socket"], params["fd"])
+            self.packet_sniffer.hide_prog_node(params["prog_name"], params["port"], params["fd"])
         if params["type"] == "ip":
             self.packet_sniffer.hide_ip_node(params["ip"])
         if params["type"] == "link":
-            self.packet_sniffer.hide_link(params["ip"], params["prog_name"], params["socket"], params["fd"])
+            self.packet_sniffer.hide_link(params["ip"], params["prog_name"], params["port"], params["fd"])
         return params
 
     def get_hidden_items(self):
@@ -55,11 +55,11 @@ class Server:
     def show(self):
         params = request.get_json()
         if params["type"] == "program" :
-            self.packet_sniffer.show_prog_node(params["prog_name"], params["socket"], params["fd"])
+            self.packet_sniffer.show_prog_node(params["prog_name"], params["port"], params["fd"])
         if params["type"] == "ip":
             self.packet_sniffer.show_ip_node(params["ip"])
         if params["type"] == "link":
-            self.packet_sniffer.show_link(params["ip"], params["prog_name"], params["socket"], params["fd"])
+            self.packet_sniffer.show_link(params["ip"], params["prog_name"], params["port"], params["fd"])
         # so the page can update with the new hidden items
         return jsonify(self.packet_sniffer.get_hidden_items());
 

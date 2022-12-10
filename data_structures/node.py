@@ -9,22 +9,22 @@ from constants import SRC, DEST
 
 class ProgInfo:
     name:str
-    socket:str
+    port:str
     fd: str
     timestamp:str
 
-    def __init__(self, name:str, socket:str, fd:str) -> None:
+    def __init__(self, name:str, port:str, fd:str) -> None:
         self.name = name
-        self.socket = socket
+        self.port = port
         self.fd = fd
         self.update_timestamp()
 
     def update_timestamp(self):
-        # update the timestamp so we know how recently this was associated with the socket
+        # update the timestamp so we know how recently this was associated with the port
         self.timestamp = datetime.now()
 
     def __str__(self):
-        return "{}({}, socket:{}) as of {}".format(self.name, self.fd, self.socket, self.timestamp)
+        return "{}({}, port:{}) as of {}".format(self.name, self.fd, self.port, self.timestamp)
 
     def __hash__(self):
         return hash(self.name) + hash(self.fd)

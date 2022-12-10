@@ -75,31 +75,31 @@ class PacketSniffer:
         elif dest == self.my_ip:
             return DEST
 
-    def associate_port_with_process(self, socket) -> ProgInfo:
+    def associate_port_with_process(self, port) -> ProgInfo:
         process_and_timestamp = "";
-        toReturn = ProgInfo(NO_PROC, socket, NO_PROC)
-        # search for socket in current connections
+        toReturn = ProgInfo(NO_PROC, port, NO_PROC)
+        # search for port in current connections
         for connection in net_connections():
-            if connection.laddr.port == socket:
+            if connection.laddr.port == port:
                 # update info if is in port_procs, else make new info class
                 self.lock.acquire() # acquire lock
                 try:
-                    if socket in self.port_procs:
-                        self.port_procs[socket].update_timestamp()
+                    if port in self.port_procs:
+                        self.port_procs[port].update_timestamp()
                     else:
-                        process = ProgInfo(Process(connection.pid).name(), socket, connection.pid)
-                        self.port_procs[socket] = process
-                    toReturn = self.port_procs[socket]
+                        process = ProgInfo(Process(connection.pid).name(), port, connection.pid)
+                        self.port_procs[port] = process
+                    toReturn = self.port_procs[port]
                 finally:
                     self.lock.release() # release lock
                 return toReturn
-        # if the loop fails to find the socket, the socket is no longer being used
+        # if the loop fails to find the port, the port is no longer being used
         # return the last associated process, or nothing if there is none
         if process_and_timestamp == "":
             self.lock.acquire() # acquire lock
             try:
-                if socket in self.port_procs:
-                    toReturn = self.port_procs[socket]
+                if port in self.port_procs:
+                    toReturn = self.port_procs[port]
             finally:
                 self.lock.release() # release lock
         return toReturn
@@ -129,7 +129,7 @@ class PacketSniffer:
         packetInfo = PacketInfo(packet.summary(),
             src, src_name,
             dest, dest_name,
-            process.socket,
+            process.port,
             process.name,
             process.fd,
             packet
@@ -161,7 +161,7 @@ class PacketSniffer:
             # hide link if one of the nodes are hidden
             if progNode.is_hidden or ipNode.is_hidden:
                 self.hide_link(ipNode.ip, progNode.program.name,
-                progNode.program.socket, progNode.program.fd, True)
+                progNode.program.port, progNode.program.fd, True)
 
         finally:
             self.lock.release() # release lock
@@ -206,8 +206,8 @@ class PacketSniffer:
             "links": links
         }
 
-    def get_prog_node_packets(self, name, socket, fd):
-        progInfo = ProgInfo(name, socket, fd)
+    def get_prog_node_packets(self, name, port, fd):
+        progInfo = ProgInfo(name, port, fd)
         packets = []
         links = []
         self.lock.acquire() # acquire lock
@@ -224,8 +224,8 @@ class PacketSniffer:
             "links": links
         }
 
-    def get_link_packets(self, ip, name, socket, fd):
-        progInfo = ProgInfo(name, socket, fd)
+    def get_link_packets(self, ip, name, port, fd):
+        progInfo = ProgInfo(name, port, fd)
         packets = []
         self.lock.acquire() # acquire lock
         try:
@@ -238,8 +238,8 @@ class PacketSniffer:
             self.lock.release() # release lock
         return packets;
 
-    def hide_prog_node(self, name, socket, fd):
-        progInfo = ProgInfo(name, socket, fd)
+    def hide_prog_node(self, name, port, fd):
+        progInfo = ProgInfo(name, port, fd)
         self.lock.acquire() # acquire lock
         try:
             if progInfo in self.prog_nodes:
@@ -289,8 +289,8 @@ class PacketSniffer:
         finally:
             self.lock.release() # release lock
 
-    def hide_link(self, ip, name, socket, fd, isFromPacketUpdate = False):
-        progInfo = ProgInfo(name, socket, fd)
+    def hide_link(self, ip, name, port, fd, isFromPacketUpdate = False):
+        progInfo = ProgInfo(name, port, fd)
         link = Link(ip, progInfo)
         if not isFromPacketUpdate:
             self.lock.acquire() # acquire lock
@@ -343,8 +343,8 @@ class PacketSniffer:
         "links": links
         }
 
-    def show_prog_node(self, name, socket, fd):
-        progInfo = ProgInfo(name, socket, fd)
+    def show_prog_node(self, name, port, fd):
+        progInfo = ProgInfo(name, port, fd)
         self.lock.acquire() # acquire lock
         try:
             if progInfo in self.prog_nodes:
@@ -390,8 +390,8 @@ class PacketSniffer:
         finally:
             self.lock.release() # release lock
 
-    def show_link(self, ip, name, socket, fd):
-        progInfo = ProgInfo(name, socket, fd)
+    def show_link(self, ip, name, port, fd):
+        progInfo = ProgInfo(name, port, fd)
         link = Link(ip, progInfo)
         self.lock.acquire() # acquire lock
         try:
