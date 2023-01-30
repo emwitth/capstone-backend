@@ -141,6 +141,7 @@ class PacketSniffer:
             progNode: ProgNode
             if process in self.prog_nodes:
                 progNode = self.prog_nodes[process]
+                progNode.update_ports(process.port)
             else:
                 progNode = ProgNode(process, their_ip, role)
                 self.prog_nodes[process] = progNode

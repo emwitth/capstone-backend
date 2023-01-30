@@ -171,13 +171,19 @@ class IPNode(Node):
 
 class ProgNode(Node):
     program:ProgInfo
+    ports:set
 
     def __init__(self, program:ProgInfo, ip:str, role:str) -> None:
         Node.__init__(self)
         self.program = program
+        self.ports = {program.port}
+        # self.ports.add(program.port)
+
+    def update_ports(self, port):
+        self.ports.add(port)
 
     def return_fields_for_json(self):
-        return {"program": self.program.__dict__, "tot_packets": self.tot_packets}
+        return {"program": self.program.__dict__, "ports": list(self.ports),"tot_packets": self.tot_packets}
 
     def print_info(self):
         print(LINE)
