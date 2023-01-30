@@ -435,17 +435,14 @@ class PacketSniffer:
         # save DNS packet info for use in display
         if DNS in packet:
             if(packet[DNS].qr == 1): # 1 indicates it is a response
-                print(packet.summary())
                 if(packet[DNS].an):
-                    print(packet[DNS].id)
                     name = packet[DNS].an.rrname.__str__()
                     ip = packet[DNS].an.rdata.__str__()
-                    print(packet[DNS].an.rrname)
-                    print(name[2:-2])
-                    print(packet[DNS].an.rdata)
-                    print(ip)
                     self.save_dns_reply_value(ip, name[2:-2]
                     )
+                    if PRINT_MISC_DEBUG:
+                        print("SAVING DNS ANSWER VALUE")
+                        print("IP for {} is {}".format(name, ip))
             process = ProgInfo(DNS_NODE_NAME, NO_PORT, NO_PROC)
         # parse the source and destination of IP packets
         if IP in packet:
