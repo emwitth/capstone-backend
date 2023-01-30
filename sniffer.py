@@ -51,23 +51,22 @@ class PacketSniffer:
                 for ip_interfaces in iface_details[netifaces.AF_INET]:
                     for key, ip_add in ip_interfaces.items():
                         if key == 'addr' and ip_add != '127.0.0.1':
-                            self.my_ip = ip_add;
+                            self.my_ip = ip_add
                             print(self.my_ip)
                             self.seen_ips[ip_add] = 'localhost'
 
-    def reverse_ip_lookup(self, address):
-        # either I've seen this before
+    def get_ip_hostname(self, address):
+        # either I've seen this in a dns reply
         if address in self.seen_ips:
             return self.seen_ips[address]
         else:
-            # or I have to look it up
-            try:
-                host_tuple = gethostbyaddr(address)
-                self.seen_ips[address] = host_tuple[0]
-                return host_tuple[0]
-            except socket.herror:
-                self.seen_ips[address] = NO_HOSTNAME
-                return NO_HOSTNAME
+            # or I have not and there is no process name
+            return NO_HOSTNAME
+        pass
+
+    def save_dns_reply_value(self, address, name):
+        if not address in self.seen_ips:
+            self.seen_ips[address] = name
 
     def check_if_src_or_dest(self, src, dest):
         if src == self.my_ip:
@@ -433,13 +432,28 @@ class PacketSniffer:
             print(LINE)
             # the summary of packets
             print(packet.summary())
+        # save DNS packet info for use in display
+        if DNS in packet:
+            if(packet[DNS].qr == 1): # 1 indicates it is a response
+                print(packet.summary())
+                if(packet[DNS].an):
+                    print(packet[DNS].id)
+                    name = packet[DNS].an.rrname.__str__()
+                    ip = packet[DNS].an.rdata.__str__()
+                    print(packet[DNS].an.rrname)
+                    print(name[2:-2])
+                    print(packet[DNS].an.rdata)
+                    print(ip)
+                    self.save_dns_reply_value(ip, name[2:-2]
+                    )
+            process = ProgInfo(DNS_NODE_NAME, NO_PORT, NO_PROC)
         # parse the source and destination of IP packets
         if IP in packet:
             src_ip = packet[IP].src
             dest_ip = packet[IP].dst
             packet_role = self.check_if_src_or_dest(src_ip, dest_ip)
-            src_hostname = self.reverse_ip_lookup(src_ip)
-            dest_hostname = self.reverse_ip_lookup(dest_ip)
+            src_hostname = self.get_ip_hostname(src_ip)
+            dest_hostname = self.get_ip_hostname(dest_ip)
             if PRINT_PACKET_INFO :
                 print("src: ", src_ip, src_hostname)
                 print("dest: ", dest_ip, dest_hostname)
@@ -447,8 +461,8 @@ class PacketSniffer:
         if IPv6 in packet:
             src_ip = packet[IPv6].src
             dest_ip = packet[IPv6].dst
-            src_hostname = self.reverse_ip_lookup(src_ip)
-            dest_hostname = self.reverse_ip_lookup(dest_ip)
+            src_hostname = self.get_ip_hostname(src_ip)
+            dest_hostname = self.get_ip_hostname(dest_ip)
             if PRINT_PACKET_INFO :
                 print("src: ", src_ip, src_hostname)
                 print("dest: ", dest_ip, dest_hostname)
@@ -471,8 +485,6 @@ class PacketSniffer:
         # add ARP requests into own 'process'
         if ARP in packet:
             process = ProgInfo(ARP_NODE_NAME, NO_PORT, NO_PROC)
-        if DNS in packet:
-            process = ProgInfo(DNS_NODE_NAME, NO_PORT, NO_PROC)
 
         if PRINT_PACKET_HEX:
             print(scapy.utils.hexdump(packet))
