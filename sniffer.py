@@ -103,11 +103,12 @@ class PacketSniffer:
                 self.lock.release() # release lock
         return toReturn
 
-    def associate_ICMP_id_with_process(self, id) -> ProgInfo:
+    def associate_port_id_with_process(self, id) -> ProgInfo:
         # find process by id
         for proc in process_iter():
             if(proc.pid == id):
                 self.icmp_procs[id] = ProgInfo(proc.name(), NO_PORT, proc.pid)
+            print(proc.pid)
         # deal with if not found process
         toReturn = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
         if id in self.icmp_procs:
@@ -443,7 +444,7 @@ class PacketSniffer:
                     if PRINT_MISC_DEBUG:
                         print("SAVING DNS ANSWER VALUE")
                         print("IP for {} is {}".format(name, ip))
-            process = ProgInfo(DNS_NODE_NAME, NO_PORT, NO_PROC)
+                        print(packet[DNS].id)
         # parse the source and destination of IP packets
         if IP in packet:
             src_ip = packet[IP].src
@@ -476,9 +477,21 @@ class PacketSniffer:
                 (
                 packet_role, process
                 ))
+        # determine the process associated with the packet if UDP
+        if UDP in packet:
+            if packet_role == SRC:
+                port = packet[UDP].sport
+            elif packet_role == DEST:
+                port = packet[UDP].dport
+            process = self.associate_port_with_process(port)
+            if PRINT_PACKET_INFO:
+                print("I am a packet with a {} associated with {}".format
+                (
+                packet_role, process
+                ))
         # determine the process associated with the packet if ICMP (ping)
         if ICMP in packet:
-            process = self.associate_ICMP_id_with_process(packet[ICMP].id)
+            process = self.associate_port_id_with_process(packet[ICMP].id)
         # add ARP requests into own 'process'
         if ARP in packet:
             process = ProgInfo(ARP_NODE_NAME, NO_PORT, NO_PROC)
