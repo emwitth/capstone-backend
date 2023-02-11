@@ -9,7 +9,9 @@ import psutil as psutilMock
 sys.modules['data_structures.node'] = Mock()
 # import data_structures.node
 from data_structures.node import ProgNode as progNodeMock
+from data_structures.node import IPNode as ipNodeMock
 from data_structures.node import ProgInfo as progInfoMock
+from data_structures.node import PacketInfo as packetInfoMock
 
 # imports to test
 import sniffer as sniffModule
@@ -22,7 +24,9 @@ class SnifferTest(unittest.TestCase):
     def setUp(self):
         psutilMock.reset_mock()
         progNodeMock.reset_mock()
+        ipNodeMock.reset_mock()
         progInfoMock.reset_mock()
+        packetInfoMock.reset_mock()
 
         progInfoMock.side_effect = self.fake_new_prog_info
 
@@ -191,6 +195,97 @@ class SnifferTest(unittest.TestCase):
         progInfoMock.assert_called_once_with(NO_PROC, NO_PORT, NO_PROC)
         self.assertEqual(result, wantedProgInfo)
 
+    def test_update_node_info__new_proc_and_ip__make_new_nodes(self):
+        # Arrange
+        src = '192.168.12.12'
+        dest = '144.144.14.14'
+        role = SRC
+        src_name = 'source name'
+        dest_name = 'dest name'
+        process = FakeProgInfo('ping', 140, 44)
+        packet = Mock()
+
+        # Act
+        self.sniffer.update_node_info(src, dest, role, src_name, dest_name, process, packet)
+
+        # Assert
+        progNodeMock.assert_called_once()
+        ipNodeMock.assert_called_once()
+
+    def test_update_node_info__new_proc_and_ip__make_new_nodes(self):
+        # Arrange
+        src = '192.168.12.12'
+        dest = '144.144.14.14'
+        role = SRC
+        src_name = 'source name'
+        dest_name = 'dest name'
+        process = FakeProgInfo('ping', 140, 44)
+        packet = Mock()
+
+        # Act
+        self.sniffer.update_node_info(src, dest, role, src_name, dest_name, process, packet)
+
+        # Assert
+        progNodeMock.assert_called_once()
+        ipNodeMock.assert_called_once()
+
+    def test_update_node_info__seen_proc_and_ip__get_old_nodes(self):
+        # Arrange
+        src = '192.168.12.12'
+        dest = '144.144.14.14'
+        role = SRC
+        src_name = 'source name'
+        dest_name = 'dest name'
+        process = FakeProgInfo('ping', 140, 44)
+        packet = Mock()
+
+        progMockReturned = Mock()
+        self.sniffer.prog_nodes[process] = progMockReturned
+
+        ipMockReturned = Mock()
+        self.sniffer.ip_nodes[dest] = ipMockReturned
+
+        # Act
+        self.sniffer.update_node_info(src, dest, role, src_name, dest_name, process, packet)
+
+        # Assert
+        progNodeMock.assert_not_called()
+        ipNodeMock.assert_not_called()
+        progMockReturned.update.assert_called_once()
+        ipMockReturned.update.assert_called_once()
+
+    @patch('sniffer.PacketSniffer.hide_link')
+    def test_update_node_info__prog_node_hidden__hide_link(self, mock):
+        # Arrange
+        src = '192.168.12.12'
+        dest = '144.144.14.14'
+        role = SRC
+        src_name = 'source name'
+        dest_name = 'dest name'
+        process = FakeProgInfo('ping', 140, 44)
+        packet = Mock()
+
+        progMockReturned = Mock()
+        progMockReturned.is_hidden = True
+        self.sniffer.prog_nodes[process] = progMockReturned
+
+        ipMockReturned = Mock()
+        self.sniffer.ip_nodes[dest] = ipMockReturned
+
+        # Act
+        self.sniffer.update_node_info(src, dest, role, src_name, dest_name, process, packet)
+
+        # Assert
+        progNodeMock.assert_not_called()
+        ipNodeMock.assert_not_called()
+        progMockReturned.update.assert_called_once()
+        ipMockReturned.update.assert_called_once()
+        self.sniffer.hide_link.assert_called_once()
+
+
+
+
+
     # Helper Methods -----------------------------------------------------------
     def get_net_connections_value(self, cons):
         connections = []
@@ -218,10 +313,14 @@ class FakeProgInfo:
         self.name = name
         self.port = port
         self.id = id
+        self.fd = 0
         self.update_timestamp = Mock()
 
     def __eq__(self, other):
         return self.name == other.name and self.port == other.port and self.id == other.id
+
+    def __hash__(self):
+        return hash(self.name) + hash(self.port) + hash(self.id)
 
 if __name__ == "__main__":
     unittest.main()
