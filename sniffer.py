@@ -111,8 +111,7 @@ class PacketSniffer:
                     self.icmp_procs[id].update_timestamp()
                 else:
                     self.icmp_procs[id] = ProgInfo(proc.name(), NO_PORT, proc.pid)
-            print(proc.pid)
-        # deal with if not found process
+        # find which process to return
         toReturn = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
         if id in self.icmp_procs:
             toReturn = self.icmp_procs[id]

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, call
 
 # mock imports
 import sys
@@ -19,12 +19,15 @@ class SnifferTest(unittest.TestCase):
     sniffer = sniffModule.PacketSniffer()
     net_connections_mock = Mock()
 
-    def tearDown(self):
+    def setUp(self):
         psutilMock.reset_mock()
         progNodeMock.reset_mock()
         progInfoMock.reset_mock()
 
+        progInfoMock.side_effect = self.fake_new_prog_info
+
         self.sniffer.port_procs = {}
+        self.sniffer.icmp_procs = {}
 
     def test_get_ip_hostname__seen_address__return_address(self):
         # Arrange
@@ -89,8 +92,7 @@ class SnifferTest(unittest.TestCase):
         psutilMock.net_connections.return_value = self.get_net_connections_value([(pid, port)])
         nameReturned = "testname"
         psutilMock.Process().name.return_value = nameReturned
-        processReturned = "testProcess"
-        progInfoMock.return_value = processReturned
+        wantedProgInfo = self.fake_new_prog_info(nameReturned, port, pid)
 
         # Act
         result = self.sniffer.associate_port_with_process(port)
@@ -98,7 +100,7 @@ class SnifferTest(unittest.TestCase):
         # Assert
         # psutilMock.Process().name.assert_called_once()
         progInfoMock.assert_called_with(nameReturned, port, pid)
-        self.assertEqual(result, processReturned)
+        self.assertEqual(result, wantedProgInfo)
 
     def test_associate_port_with_process__port_in_use_and_port_exists__update_process_node(self):
         # Arrange
@@ -128,10 +130,66 @@ class SnifferTest(unittest.TestCase):
         self.assertEqual(result, processMock)
 
     def test_associate_port_id_with_process__proc_exists_not_seen__return_new_proc(self):
-        pass
+        # Arrange
+        id = 100
+        name = 'testProcessName'
+        psutilMock.process_iter.return_value = self.get_process_iters_value([(id, name)])
+        wantedProgInfo = self.fake_new_prog_info(name, NO_PORT, id)
 
+        # Act
+        result = self.sniffer.associate_port_id_with_process(id)
 
+        # Assert
+        calls = [call(name, NO_PORT, id), call(NO_PROC, NO_PORT, NO_PROC)]
+        progInfoMock.assert_has_calls(calls)
+        self.assertEqual(result, wantedProgInfo)
 
+    def test_associate_port_id_with_process__proc_exists_seen_previously__update_timestamp_return_old_proc(self):
+        # Arrange
+        id = 100
+        name = 'testProcessName'
+        psutilMock.process_iter.return_value = self.get_process_iters_value([(id, name)])
+        wantedProgInfo = self.fake_new_prog_info(name, NO_PORT, id)
+        self.sniffer.icmp_procs[id] = wantedProgInfo
+
+        # Act
+        result = self.sniffer.associate_port_id_with_process(id)
+
+        # Assert
+        wantedProgInfo.update_timestamp.assert_called_once()
+        progInfoMock.assert_called_once_with(NO_PROC, NO_PORT, NO_PROC)
+        self.assertEqual(result, wantedProgInfo)
+
+    def test_associate_port_id_with_process__proc_over_seen_previously__return_old_proc(self):
+        # Arrange
+        id = 100
+        name = 'testProcessName'
+        psutilMock.process_iter.return_value = self.get_process_iters_value([])
+        wantedProgInfo = self.fake_new_prog_info(name, NO_PORT, id)
+        self.sniffer.icmp_procs[id] = wantedProgInfo
+
+        # Act
+        result = self.sniffer.associate_port_id_with_process(id)
+
+        # Assert
+        wantedProgInfo.update_timestamp.assert_not_called()
+        progInfoMock.assert_called_once_with(NO_PROC, NO_PORT, NO_PROC)
+        self.assertEqual(result, wantedProgInfo)
+
+    def test_associate_port_id_with_process__proc_not_found__return_no_proc(self):
+        # Arrange
+        id = 100
+        name = 'testProcessName'
+        psutilMock.process_iter.return_value = self.get_process_iters_value([])
+        wantedProgInfo = self.fake_new_prog_info(NO_PROC, NO_PORT, NO_PROC)
+
+        # Act
+        result = self.sniffer.associate_port_id_with_process(id)
+
+        # Assert
+        wantedProgInfo.update_timestamp.assert_not_called()
+        progInfoMock.assert_called_once_with(NO_PROC, NO_PORT, NO_PROC)
+        self.assertEqual(result, wantedProgInfo)
 
     # Helper Methods -----------------------------------------------------------
     def get_net_connections_value(self, cons):
@@ -142,6 +200,28 @@ class SnifferTest(unittest.TestCase):
             connection.laddr.port = con[1]
             connections.append(connection)
         return connections
+
+    def get_process_iters_value(self, iters):
+        proc_iters = []
+        for iter in iters:
+            proc = Mock()
+            proc.pid = iter[0]
+            proc.name.return_value = iter[1]
+            proc_iters.append(proc)
+        return proc_iters
+
+    def fake_new_prog_info(self, name, port, id):
+        return FakeProgInfo(self, name, id)
+
+class FakeProgInfo:
+    def __init__(self, name, port, id):
+        self.name = name
+        self.port = port
+        self.id = id
+        self.update_timestamp = Mock()
+
+    def __eq__(self, other):
+        return self.name == other.name and self.port == other.port and self.id == other.id
 
 if __name__ == "__main__":
     unittest.main()
