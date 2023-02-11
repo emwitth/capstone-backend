@@ -183,7 +183,6 @@ class PacketSniffer:
                     ips.append(ip.get_info())
         finally:
             self.lock.release() # release lock
-        print(progs)
         return {
         "links": links,
         "ip_nodes": ips,

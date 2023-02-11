@@ -32,6 +32,8 @@ class SnifferTest(unittest.TestCase):
 
         self.sniffer.port_procs = {}
         self.sniffer.icmp_procs = {}
+        self.sniffer.prog_nodes = {}
+        self.sniffer.ip_nodes = {}
 
     def test_get_ip_hostname__seen_address__return_address(self):
         # Arrange
@@ -282,8 +284,143 @@ class SnifferTest(unittest.TestCase):
         ipMockReturned.update.assert_called_once()
         self.sniffer.hide_link.assert_called_once()
 
+    def test_get_graph_json__has_no_nodes__return_empty_object(self):
+        # Arrange
+        blankResult = {
+        "links": [],
+        "ip_nodes": [],
+        "prog_nodes": []
+        }
 
+        # Act
+        result = self.sniffer.get_graph_json()
 
+        # Assert
+        self.assertEqual(result, blankResult)
+
+    def test_get_graph_json__has_visible_nodes__return_nodes_and_links(self):
+        # Arrange
+        links1 = ["link1", "link2", "link3"]
+        links2 = ["link4", "link5"]
+        prog1 = {'program': 'value'}
+        prog2 = {'another program': 'a different value'}
+        ip1 = {'ip node', 'address and stuff'}
+        ip2 = {'yet another ip node', 'more stuff'}
+
+        prog_nodes = {
+            1 : Mock(),
+            2 : Mock()
+        }
+        prog_nodes[1].make_con_list.return_value = links1
+        prog_nodes[1].return_fields_for_json.return_value = prog1
+        prog_nodes[1].is_hidden = False
+        prog_nodes[2].make_con_list.return_value = links2
+        prog_nodes[2].return_fields_for_json.return_value = prog2
+        prog_nodes[2].is_hidden = False
+        self.sniffer.prog_nodes = prog_nodes
+
+        ip_nodes = {
+            1 : Mock(),
+            2 : Mock()
+        }
+        ip_nodes[1].get_info.return_value = ip1
+        ip_nodes[1].is_hidden = False
+        ip_nodes[2].get_info.return_value = ip2
+        ip_nodes[2].is_hidden = False
+        self.sniffer.ip_nodes = ip_nodes
+
+        wantedResult = {
+        'links': links1 + links2,
+        'ip_nodes': [ip1, ip2],
+        'prog_nodes': [prog1, prog2]
+        }
+
+        # Act
+        result = self.sniffer.get_graph_json()
+
+        # Assert
+        self.assertEqual(result, wantedResult)
+
+    def test_get_graph_json__has_hidden_nodes__skip_hidden_nodes(self):
+        # Arrange
+        links1 = ["link1", "link2", "link3"]
+        links2 = ["link4", "link5"]
+        prog1 = {'program': 'value'}
+        prog2 = {'another program': 'a different value'}
+        ip1 = {'ip node', 'address and stuff'}
+        ip2 = {'yet another ip node', 'more stuff'}
+
+        prog_nodes = {
+            1 : Mock(),
+            2 : Mock()
+        }
+        prog_nodes[1].make_con_list.return_value = links1
+        prog_nodes[1].return_fields_for_json.return_value = prog1
+        prog_nodes[1].is_hidden = False
+        prog_nodes[2].make_con_list.return_value = links2
+        prog_nodes[2].return_fields_for_json.return_value = prog2
+        prog_nodes[2].is_hidden = True
+        self.sniffer.prog_nodes = prog_nodes
+
+        ip_nodes = {
+            1 : Mock(),
+            2 : Mock()
+        }
+        ip_nodes[1].get_info.return_value = ip1
+        ip_nodes[1].is_hidden = False
+        ip_nodes[2].get_info.return_value = ip2
+        ip_nodes[2].is_hidden = True
+        self.sniffer.ip_nodes = ip_nodes
+
+        wantedResult = {
+        'links': links1,
+        'ip_nodes': [ip1],
+        'prog_nodes': [prog1]
+        }
+
+        # Act
+        result = self.sniffer.get_graph_json()
+
+        # Assert
+        self.assertEqual(result, wantedResult)
+
+    def test_get_ip_node_packets__no_ip_node__return_empty_object(self):
+        # Arrange
+        ip = "122.222.12.21"
+        wantedResult = {
+            "packets": [],
+            "links": []
+        }
+
+        # Act
+        result = self.sniffer.get_ip_node_packets(ip)
+
+        # Assert
+        self.assertEqual(result, wantedResult)
+
+    def test_get_ip_node_packets__ip_node_exists__return_packets_object(self):
+        # Arrange
+        ip = "122.222.12.21"
+        wrongIp = "666.666.666.666"
+
+        ip_nodes = {
+            ip : Mock(),
+            wrongIp : Mock()
+        }
+        goodPackets = [FakePacket("hello"), FakePacket("world")]
+        ip_nodes[ip].packets = goodPackets
+        badPackets = [FakePacket("olleh"), FakePacket("satan")]
+        ip_nodes[wrongIp].packets = badPackets
+        self.sniffer.ip_nodes = ip_nodes
+
+        # Act
+        result = self.sniffer.get_ip_node_packets(ip)
+
+        # Assert
+        for packet in goodPackets:
+            self.assertIn(packet.info, result["packets"])
+        for packet in badPackets:
+            self.assertNotIn(packet.info, result["packets"])
 
 
     # Helper Methods -----------------------------------------------------------
@@ -321,6 +458,13 @@ class FakeProgInfo:
 
     def __hash__(self):
         return hash(self.name) + hash(self.port) + hash(self.id)
+
+class FakePacket:
+    def __init__(self, info):
+        self.info = info
+
+    def get_info(self):
+        return self.info
 
 if __name__ == "__main__":
     unittest.main()
