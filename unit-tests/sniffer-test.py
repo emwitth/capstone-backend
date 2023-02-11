@@ -474,8 +474,78 @@ class SnifferTest(unittest.TestCase):
         # Assert
         self.assertEqual(result, wantedResult)
 
+    def test_get_link_packets__no_link_exists__return_empty_list(self):
+        # Arrange
+        ip = "122.212.23.34"
+        name = "ping"
+        port = 8080
+        fd = 400
+        wantedResult = []
 
+        # Act
+        result = self.sniffer.get_link_packets(ip, name, port, fd)
 
+        # Assert
+        self.assertEqual(result, wantedResult)
+
+    def test_get_link_packets__link_exists__return_list_with_packets_over_link(self):
+        # Arrange
+        ip = "122.212.23.34"
+        name = "ping"
+        port = 8080
+        fd = 400
+
+        prog = self.fake_new_prog_info(name, port, fd)
+        wrongProg = self.fake_new_prog_info("jeremy", 20, 23)
+        prog_nodes = {
+            prog: Mock(),
+            wrongProg: Mock()
+        }
+
+        packetsrc = Mock()
+        packetsrc.src = ip
+        packetsrc.dest = "123.123.123.123"
+        packetsrc.get_info.return_value = packetsrc
+
+        packet0 = Mock()
+        packet0.src = "123.456.789.123"
+        packet0.dest = "123.123.123.123"
+        packet0.get_info.return_value = packet0
+
+        packetdest = Mock()
+        packetdest.src = "123.123.123.123"
+        packetdest.dest = ip
+        packetdest.get_info.return_value = packetdest
+
+        packet1 = Mock()
+        packet1.src = "123.456.789.123"
+        packet1.dest = "123.123.123.123"
+        packet1.get_info.return_value = packet1
+
+        packet2 = Mock()
+        packet2.src = "123.456.789.123"
+        packet2.dest = "123.123.123.123"
+        packet2.get_info.return_value = packet2
+
+        packet3 = Mock()
+        packet3.src = "123.456.789.123"
+        packet3.dest = "123.123.123.123"
+        packet3.get_info.return_value = packet3
+
+        packets = [packetsrc, packet0, packetdest]
+        wrongPackets = [packet1, packet2, packet3]
+
+        prog_nodes[prog].packets = packets
+        prog_nodes[wrongProg].packets = wrongPackets
+        self.sniffer.prog_nodes = prog_nodes
+
+        wantedResult = [packetsrc, packetdest]
+
+        # Act
+        result = self.sniffer.get_link_packets(ip, name, port, fd)
+
+        # Assert
+        self.assertEqual(result, wantedResult)
 
     # Helper Methods -----------------------------------------------------------
     def get_net_connections_value(self, cons):
