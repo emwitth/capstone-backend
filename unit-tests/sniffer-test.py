@@ -422,6 +422,60 @@ class SnifferTest(unittest.TestCase):
         for packet in badPackets:
             self.assertNotIn(packet.info, result["packets"])
 
+    def test_get_prog_node_packets__no_prog_node__return_empty_object(self):
+        # Arrange
+        name = "nc"
+        port = 80
+        fd = 140
+        wantedResult = {
+            "packets": [],
+            "links": []
+        }
+
+        # Act
+        result = self.sniffer.get_prog_node_packets(name, port, fd)
+
+        # Assert
+        self.assertEqual(result, wantedResult)
+
+    def test_get_prog_node_packets__seen_prog_node__return_packets_object(self):
+        # Arrange
+        name = "nc"
+        port = 80
+        fd = 140
+        prog = self.fake_new_prog_info(name, port, fd)
+        wrongName = "ping"
+        wrongPort = 8080
+        wrongFd = 160
+        wrongProg = self.fake_new_prog_info(wrongName, wrongPort, wrongFd)
+
+        prog_nodes = {
+            prog: Mock(),
+            wrongProg: Mock()
+        }
+        goodPackets = [FakePacket("hello"), FakePacket("world")]
+        goodCons = ["123.123.123.123", "234.234.234.234"]
+        prog_nodes[prog].packets = goodPackets
+        prog_nodes[prog].make_con_list.return_value = goodCons
+        badPackets = [FakePacket("olleh"), FakePacket("satan")]
+        badCons = ["666.666.666.666", "776.776.776.776"]
+        prog_nodes[wrongProg].packets = badPackets
+        prog_nodes[wrongProg].make_con_list.return_value = badCons
+        self.sniffer.prog_nodes = prog_nodes
+
+        wantedResult = {
+            "packets": ["hello", "world"],
+            "links": goodCons
+        }
+
+        # Act
+        result = self.sniffer.get_prog_node_packets(name, port, fd)
+
+        # Assert
+        self.assertEqual(result, wantedResult)
+
+
+
 
     # Helper Methods -----------------------------------------------------------
     def get_net_connections_value(self, cons):
@@ -443,7 +497,7 @@ class SnifferTest(unittest.TestCase):
         return proc_iters
 
     def fake_new_prog_info(self, name, port, id):
-        return FakeProgInfo(self, name, id)
+        return FakeProgInfo(name, port, id)
 
 class FakeProgInfo:
     def __init__(self, name, port, id):
@@ -459,12 +513,18 @@ class FakeProgInfo:
     def __hash__(self):
         return hash(self.name) + hash(self.port) + hash(self.id)
 
+    def __str__(self):
+        return "{} {} {}".format(self.name, self.port, self.id)
+
 class FakePacket:
     def __init__(self, info):
         self.info = info
 
     def get_info(self):
         return self.info
+
+    def __str__(self):
+        return "{}".format(info)
 
 if __name__ == "__main__":
     unittest.main()
