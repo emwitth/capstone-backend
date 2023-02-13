@@ -107,13 +107,14 @@ class PacketSniffer:
         # find process by id
         for proc in process_iter():
             if(proc.pid == id):
-                self.icmp_procs[id] = ProgInfo(proc.name(), NO_PORT, proc.pid)
-            print(proc.pid)
-        # deal with if not found process
+                if id in self.icmp_procs:
+                    self.icmp_procs[id].update_timestamp()
+                else:
+                    self.icmp_procs[id] = ProgInfo(proc.name(), NO_PORT, proc.pid)
+        # find which process to return
         toReturn = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
         if id in self.icmp_procs:
             toReturn = self.icmp_procs[id]
-            self.icmp_procs[id].update_timestamp()
         return toReturn
 
 
@@ -182,7 +183,6 @@ class PacketSniffer:
                     ips.append(ip.get_info())
         finally:
             self.lock.release() # release lock
-        print(progs)
         return {
         "links": links,
         "ip_nodes": ips,
