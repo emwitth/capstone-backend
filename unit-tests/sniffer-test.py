@@ -35,6 +35,10 @@ class SnifferTest(unittest.TestCase):
         self.sniffer.prog_nodes = {}
         self.sniffer.ip_nodes = {}
 
+        self.sniffer.hidden_ip_nodes = {}
+        self.sniffer.hidden_prog_nodes = {}
+        self.sniffer.hidden_links = {}
+
     def test_get_ip_hostname__seen_address__return_address(self):
         # Arrange
         ip = '172.19.168.43'
@@ -546,6 +550,91 @@ class SnifferTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(result, wantedResult)
+
+    def test_hide_prog_node__prog_node_dne__skip_hiding(self):
+        # Arrange
+        name = "ping"
+        port = 8080
+        fd = 600
+
+        # Act
+        self.sniffer.hide_prog_node(name, port, fd)
+
+        # Assert
+        self.assertEqual(self.sniffer.hidden_ip_nodes, {})
+        self.assertEqual(self.sniffer.hidden_prog_nodes, {})
+        self.assertEqual(self.sniffer.hidden_links, {})
+
+    def test_hide_prog_node__prog_node_exists__hide_node_and_link(self):
+        # Arrange
+        name = "ping"
+        port = 8080
+        fd = 600
+        prog = self.fake_new_prog_info(name, port, fd)
+        prog2 = self.fake_new_prog_info(name+"1", port+1, fd+1)
+        prog_nodes = {
+            prog: Mock(),
+            prog2: Mock()
+        }
+        prog_nodes[prog].cons = {1:Mock(), 2:Mock()}
+        prog_nodes[prog].is_hidden = False
+        prog_nodes[prog2].cons = {1:Mock(), 2:Mock()}
+        prog_nodes[prog2].is_hidden = False
+        prog_nodes[prog].cons[1].ip.cons = {1:Mock(), 2:Mock()}
+        prog_nodes[prog].cons[1].ip.are_all_links_hidden.return_value = False
+        prog_nodes[prog].cons[1].is_hidden = False
+        prog_nodes[prog].cons[2].ip.cons = {1:Mock(), 2:Mock()}
+        prog_nodes[prog].cons[2].ip.are_all_links_hidden.return_value = False
+        prog_nodes[prog].cons[2].is_hidden = False
+        self.sniffer.prog_nodes = prog_nodes
+
+        hidden_prog_nodes_result = {prog:prog_nodes[prog]}
+
+        # Act
+        self.sniffer.hide_prog_node(name, port, fd)
+
+        # Assert
+        self.assertEqual(self.sniffer.hidden_ip_nodes, {})
+        self.assertEqual(self.sniffer.hidden_prog_nodes, hidden_prog_nodes_result)
+        self.assertTrue(prog_nodes[prog].is_hidden)
+        self.assertTrue(prog_nodes[prog].cons[1].is_hidden)
+        self.assertTrue(prog_nodes[prog].cons[2].is_hidden)
+        self.assertFalse(prog_nodes[prog2].is_hidden)
+
+    def test_hide_prog_node__prog_node_one_connection__hide_prog_node_and_connected_ip_node(self):
+        # Arrange
+        name = "ping"
+        port = 8080
+        fd = 600
+        prog = self.fake_new_prog_info(name, port, fd)
+        prog2 = self.fake_new_prog_info(name+"1", port+1, fd+1)
+        prog_nodes = {
+            prog: Mock(),
+            prog2: Mock()
+        }
+        prog_nodes[prog].cons = {1:Mock()}
+        prog_nodes[prog].is_hidden = False
+        prog_nodes[prog2].cons = {1:Mock(), 2:Mock()}
+        prog_nodes[prog2].is_hidden = False
+        prog_nodes[prog].cons[1].ip.cons = {1:Mock()}
+        prog_nodes[prog].cons[1].ip.ip = "192.168.32.21"
+        prog_nodes[prog].cons[1].ip.are_all_links_hidden.return_value = False
+        prog_nodes[prog].cons[1].is_hidden = False
+        self.sniffer.prog_nodes = prog_nodes
+
+        hidden_prog_nodes_result = {prog: prog_nodes[prog]}
+        hidden_ip_nodes_result = {prog_nodes[prog].cons[1].ip.ip: prog_nodes[prog].cons[1].ip}
+
+        # Act
+        self.sniffer.hide_prog_node(name, port, fd)
+
+        # Assert
+        self.assertEqual(self.sniffer.hidden_ip_nodes, hidden_ip_nodes_result)
+        self.assertEqual(self.sniffer.hidden_prog_nodes, hidden_prog_nodes_result)
+        self.assertTrue(prog_nodes[prog].is_hidden)
+        self.assertTrue(prog_nodes[prog].cons[1].is_hidden)
+        self.assertFalse(prog_nodes[prog2].is_hidden)
+
 
     # Helper Methods -----------------------------------------------------------
     def get_net_connections_value(self, cons):
