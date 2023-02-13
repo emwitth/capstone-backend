@@ -1,9 +1,9 @@
-test: script1
+test: initial
 
-script1:
-	./test-scripts/script1.sh
+initial:
+	./test-scripts/initial.sh
 
-unit:
+unit-test:
 	python3 -m unit-tests.sniffer-test
 
 run:
