@@ -53,7 +53,8 @@ class PacketSniffer:
                         if key == 'addr' and ip_add != '127.0.0.1':
                             self.my_ip = ip_add
                             print(self.my_ip)
-                            self.seen_ips[ip_add] = 'localhost'
+                            self.seen_ips[ip_add] = set()
+                            self.seen_ips[ip_add].add('localhost')
 
     def get_ip_hostname(self, address):
         # either I've seen this in a dns reply
@@ -61,12 +62,13 @@ class PacketSniffer:
             return self.seen_ips[address]
         else:
             # or I have not and there is no process name
-            return NO_HOSTNAME
+            return {NO_HOSTNAME}
         pass
 
     def save_dns_reply_value(self, address, name):
         if not address in self.seen_ips:
-            self.seen_ips[address] = name
+            self.seen_ips[address] = set()
+        self.seen_ips[address].add(name)
 
     def check_if_src_or_dest(self, src, dest):
         if src == self.my_ip:
@@ -118,18 +120,18 @@ class PacketSniffer:
         return toReturn
 
 
-    def update_node_info(self, src, dest, role, src_name, dest_name, process, packet):
+    def update_node_info(self, src, dest, role, src_names, dest_names, process, packet):
         # decide where I am src or dest and set appropriately
         if role == SRC:
             their_ip = dest
-            their_name = dest_name
+            their_names = dest_names
         else:
             their_ip = src
-            their_name = src_name
+            their_names = src_names
         # create packet info object to be stored
         packetInfo = PacketInfo(packet.summary(),
-            src, src_name,
-            dest, dest_name,
+            src, src_names,
+            dest, dest_names,
             process.port,
             process.name,
             process.fd,
@@ -153,7 +155,7 @@ class PacketSniffer:
             if their_ip in self.ip_nodes:
                 ipNode = self.ip_nodes[their_ip]
             else:
-                ipNode = IPNode(their_ip, their_name)
+                ipNode = IPNode(their_ip, their_names)
                 self.ip_nodes[their_ip] = ipNode
 
             # update nodes
@@ -424,8 +426,8 @@ class PacketSniffer:
         packet_role = NO_ROLE
         src_ip = NO_IP
         dest_ip = NO_IP
-        src_hostname = NO_HOSTNAME
-        dest_hostname = NO_HOSTNAME
+        src_hostnames = NO_HOSTNAME
+        dest_hostnames = NO_HOSTNAME
         port = NO_PORT
         process = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
         # print scapy's summary of the packet
@@ -450,20 +452,20 @@ class PacketSniffer:
             src_ip = packet[IP].src
             dest_ip = packet[IP].dst
             packet_role = self.check_if_src_or_dest(src_ip, dest_ip)
-            src_hostname = self.get_ip_hostname(src_ip)
-            dest_hostname = self.get_ip_hostname(dest_ip)
+            src_hostnames = self.get_ip_hostname(src_ip)
+            dest_hostnames = self.get_ip_hostname(dest_ip)
             if PRINT_PACKET_INFO :
-                print("src: ", src_ip, src_hostname)
-                print("dest: ", dest_ip, dest_hostname)
+                print("src: ", src_ip, src_hostnames)
+                print("dest: ", dest_ip, dest_hostnames)
         # parse the source and destination of IPv6 packets
         if IPv6 in packet:
             src_ip = packet[IPv6].src
             dest_ip = packet[IPv6].dst
-            src_hostname = self.get_ip_hostname(src_ip)
-            dest_hostname = self.get_ip_hostname(dest_ip)
+            src_hostnames = self.get_ip_hostname(src_ip)
+            dest_hostnames = self.get_ip_hostname(dest_ip)
             if PRINT_PACKET_INFO :
-                print("src: ", src_ip, src_hostname)
-                print("dest: ", dest_ip, dest_hostname)
+                print("src: ", src_ip, src_hostnames)
+                print("dest: ", dest_ip, dest_hostnames)
         # determine the process associated with the packet if TCP
         if TCP in packet:
             if packet_role == SRC:
@@ -500,7 +502,7 @@ class PacketSniffer:
             print(scapy.utils.hexdump(packet))
         # update count we have stored to send to frontend
         self.update_node_info(src_ip, dest_ip, packet_role,
-                        src_hostname, dest_hostname, process, packet);
+                        src_hostnames, dest_hostnames, process, packet);
 
     def sniff_packets(self):
         print("Sniffing Started")

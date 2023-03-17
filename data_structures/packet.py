@@ -8,14 +8,14 @@ class PacketInfo:
     summary:str
     src:str
     dest:str
-    src_name:str
-    dest_name:str
+    src_name:set
+    dest_name:set
     port:str
     program_name:str
     program_fd:str
     packet: packet.Packet
 
-    def __init__(self, summary:str, src:str, src_name:str, dest:str, dest_name:str, port:str, program_name:str, program_fd:str, packet:packet.Packet):
+    def __init__(self, summary:str, src:str, src_name:set, dest:str, dest_name:set, port:str, program_name:str, program_fd:str, packet:packet.Packet):
         self.summary = summary
         self.src = src
         self.dest = dest
