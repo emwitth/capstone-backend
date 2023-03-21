@@ -172,7 +172,7 @@ class IPNode(Node):
 class ProgNode(Node):
     program:ProgInfo
     ports:set
-    
+
     def __init__(self, program:ProgInfo, ip:str, role:str) -> None:
         Node.__init__(self)
         self.program = program
