@@ -139,7 +139,7 @@ class Connection:
     def get_info(self):
         return {
         "program": self.program.program.__dict__,
-        "ip_name": self.ip.name,
+        "ip_name": sorted(self.ip.names)[0],
         "ip": self.ip.ip,
         "in_packets": self.in_packets,
         "out_packets": self.out_packets
