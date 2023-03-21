@@ -139,7 +139,7 @@ class Connection:
     def get_info(self):
         return {
         "program": self.program.program.__dict__,
-        "ip_name": self.ip.name,
+        "ip_name": sorted(self.ip.names)[0],
         "ip": self.ip.ip,
         "in_packets": self.in_packets,
         "out_packets": self.out_packets
@@ -150,22 +150,22 @@ class Connection:
 
 class IPNode(Node):
     ip:str
-    name:str
+    names:set
     packets:List[PacketInfo]
 
-    def __init__(self, ip:str, name:str) -> None:
+    def __init__(self, ip:str, names:set) -> None:
         Node.__init__(self)
         self.ip = ip
-        self.name = name
+        self.names = names
 
     def print_info(self):
         print(LINE)
-        print("{}({}), tot. packets:{}".format(self.ip, self.name, self.tot_packets))
+        print("{}({}), tot. packets:{}".format(self.ip, sorted(self.names), self.tot_packets))
 
     def get_info(self):
         return {
         "ip": self.ip,
-        "name": self.name,
+        "names": sorted(self.names),
         "tot_packets": self.tot_packets
         }
 
