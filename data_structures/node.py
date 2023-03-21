@@ -160,7 +160,7 @@ class IPNode(Node):
 
     def print_info(self):
         print(LINE)
-        print("{}({}), tot. packets:{}".format(self.ip, self.names[0], self.tot_packets))
+        print("{}({}), tot. packets:{}".format(self.ip, sorted(self.names), self.tot_packets))
 
     def get_info(self):
         return {
