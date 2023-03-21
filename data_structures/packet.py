@@ -30,12 +30,18 @@ class PacketInfo:
         return self.summary + " -- " + self.src_name + "-->" + self.dest_name
 
     def get_info(self):
+        srcn = self.src_name
+        if(isinstance(srcn, set)):
+            srcn = sorted(srcn)
+        destn = self.dest_name
+        if(isinstance(destn, set)):
+            destn = sorted(destn)
         return {
         "summary": self.summary,
         "src": self.src,
         "dest": self.dest,
-        "src_name": self.src_name,
-        "dest_name": self.dest_name,
+        "src_name": srcn,
+        "dest_name": destn,
         "port": self.port,
         "program_name": self.program_name,
         "program_fd": self.program_fd,
