@@ -4,7 +4,7 @@
 
 # controls whether packet info is printed while it is sniffed
 # used for debugging
-PRINT_PACKET_INFO = True
+PRINT_PACKET_INFO = False
 PRINT_PACKET_HEX = False
 PRINT_MISC_DEBUG = False
 
