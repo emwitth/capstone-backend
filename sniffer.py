@@ -177,11 +177,11 @@ class PacketSniffer:
         self.lock.acquire() # acquire lock
         try:
             for prog in self.prog_nodes.values():
-                if prog.is_hidden == False:
+                if prog.is_hidden == False and prog.tot_packets > 0:
                     links.extend(prog.make_con_list())
                     progs.append(prog.return_fields_for_json())
             for ip in self.ip_nodes.values():
-                if ip.is_hidden == False:
+                if ip.is_hidden == False and prog.tot_packets > 0:
                     ips.append(ip.get_info())
         finally:
             self.lock.release() # release lock
