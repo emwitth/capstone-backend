@@ -1,8 +1,8 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "IP List Script - Checks that one ip can share multiple names"
-echo "begin script? (y/n):"
+printf "begin script? (y/n):"
 read input
 if [ $input != 'y' ]; then
     echo "script skipped"
@@ -14,5 +14,5 @@ else
     sleep 1
     echo "ping example.net -c 3 -------------------------------------------------"
     ping example.net -c 3
-    echo "FINISHED IP LIST SCRIPT -----------------------------------------"
+    echo "FINISHED IP LIST SCRIPT -----------------------------------------------"
 fi

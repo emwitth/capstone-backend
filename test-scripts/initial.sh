@@ -1,8 +1,8 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "Initial Script - Diverse checks for simple graph check"
-echo "begin script? (y/n):"
+printf "begin script? (y/n):"
 read input
 if [ $input != 'y' ]; then
     echo "script skipped"
