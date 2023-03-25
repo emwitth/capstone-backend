@@ -16,10 +16,15 @@ class Server:
         return jsonify(self.packet_sniffer.get_graph_json())
 
     def sniff_controller(self, on):
+        params = request.get_json()
         if(on.title() == "True"):
             self.packet_sniffer.sniff_packets()
             return jsonify("Packet Sniffer Started")
         elif(on.title() == "False"):
+            if(params["sessionName"] == ""):
+                print("There is no session name.")
+            else:
+                print("I got a session name: {}".format(params["sessionName"]))
             self.packet_sniffer.stop_sniffing()
             return jsonify("Packet Sniffer Stopped")
         return jsonify("Failed")
