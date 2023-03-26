@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
+import os
 
 # my modules
 from sniffer import PacketSniffer
@@ -25,6 +26,13 @@ class Server:
                 print("There is no session name.")
             else:
                 print("I got a session name: {}".format(params["sessionName"]))
+                folder_path = "sessions/{}".format(params["sessionName"])
+                if(os.path.exists(folder_path)):
+                    # session exists shouldn't overwrite it, throw an error
+                    return make_response(jsonify({'message': "Session name already exists. Try another one."}), 400)
+                else:
+                    # create folder for session
+                    os.makedirs(folder_path)
             self.packet_sniffer.stop_sniffing()
             return jsonify("Packet Sniffer Stopped")
         return jsonify("Failed")
