@@ -23,6 +23,7 @@ class PacketSniffer:
     icmp_procs = {}
     my_ip = ""
     capture: AsyncSniffer
+    cap: PacketList
     lock: Lock
 
     # items to become the JSON object
@@ -39,6 +40,7 @@ class PacketSniffer:
         self.emptyProcess = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
         self.prog_nodes[self.emptyProcess] = ProgNode(self.emptyProcess, NO_IP, NO_ROLE)
         self.capture = AsyncSniffer(prn=self.process_packet)
+        self.cap = []
         self.lock = Lock()
 
         # get my address
@@ -509,9 +511,12 @@ class PacketSniffer:
         self.capture.start()
 
     def stop_sniffing(self):
-        self.capture.stop()
+        self.cap = self.capture.stop()
         print("Done Sniffing")
         for prog in self.prog_nodes:
             self.prog_nodes[prog].print_info()
         for ip in self.ip_nodes:
             self.ip_nodes[ip].print_info()
+
+    def write_pcap(self, path):
+        wrpcap("{}.pcap".format(path),self.cap)

@@ -24,16 +24,18 @@ class Server:
         elif(on.title() == "False"):
             if(params["sessionName"] == ""):
                 print("There is no session name.")
+                self.packet_sniffer.stop_sniffing()
             else:
                 print("I got a session name: {}".format(params["sessionName"]))
                 folder_path = "sessions/{}".format(params["sessionName"])
                 if(os.path.exists(folder_path)):
                     # session exists shouldn't overwrite it, throw an error
-                    return make_response(jsonify({'message': "Session name already exists. Try another one."}), 400)
+                    return make_response(jsonify({"message": "Session name already exists. Try another one."}), 400)
                 else:
                     # create folder for session
                     os.makedirs(folder_path)
-            self.packet_sniffer.stop_sniffing()
+                    self.packet_sniffer.stop_sniffing()
+                    self.packet_sniffer.write_pcap("{}/{}".format(folder_path, params["sessionName"]))
             return jsonify("Packet Sniffer Stopped")
         return jsonify("Failed")
 
