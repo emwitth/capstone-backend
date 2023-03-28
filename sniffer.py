@@ -521,8 +521,14 @@ class PacketSniffer:
     def write_pcap(self, path):
         wrpcap("{}.pcap".format(path),self.cap)
 
-    def write_proc_by_port(self, path):
+    def write_port_procs(self, path):
         file = open("{}/port.txt".format(path), "w")
         for entry in self.port_procs:
             file.write(self.port_procs[entry].file_string())
+        file.close()
+
+    def write_icmp_procs(self, path):
+        file = open("{}/icmp.txt".format(path), "w")
+        for entry in self.icmp_procs:
+            file.write("{}:{}".format(entry, self.icmp_procs[entry].file_string()))
         file.close()

@@ -36,7 +36,8 @@ class Server:
                     os.makedirs(folder_path)
                     self.packet_sniffer.stop_sniffing()
                     self.packet_sniffer.write_pcap("{}/{}".format(folder_path, params["sessionName"]))
-                    self.packet_sniffer.write_proc_by_port(folder_path)
+                    self.packet_sniffer.write_port_procs(folder_path)
+                    self.packet_sniffer.write_icmp_procs(folder_path)
             return jsonify("Packet Sniffer Stopped")
         return jsonify("Failed")
 
