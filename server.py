@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request, make_response, send_from_directory
 import os
 from shutil import rmtree
 from datetime import datetime
@@ -73,6 +73,11 @@ class Server:
             return make_response(jsonify("Session {} deleted successfully".format(name)), 200)
         return make_response(jsonify("Session {} does not exist.".format(name)), 404)
 
+    def get_pcap(self, name):
+        path = "sessions/{}".format(name)
+        file = "{}.pcap".format(name)
+        return send_from_directory(path, file, as_attachment=True)
+
     def node_packets(self):
         params = request.get_json()
         if(params["isIP"] == True):
@@ -117,6 +122,7 @@ class Server:
         self.app.add_url_rule('/api/sniff/<string:on>', 'sniff_controller', self.sniff_controller, methods=['POST'])
         self.app.add_url_rule('/api/sessions', 'list_sessions', self.list_sessions)
         self.app.add_url_rule('/api/sessions/<string:name>', 'delete_session', self.delete_session, methods=['DELETE'])
+        self.app.add_url_rule('/api/sessions/<string:name>/pcap', 'get_pcap', self.get_pcap, methods=['POST'])
         self.app.add_url_rule('/api/node_packets', 'node_packets', self.node_packets, methods=['POST'])
         self.app.add_url_rule('/api/link_packets', 'link_packets', self.link_packets, methods=['POST'])
         self.app.add_url_rule('/api/hide', 'hide', self.hide, methods=['POST'])
