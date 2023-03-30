@@ -23,6 +23,9 @@ class ProgInfo:
         # update the timestamp so we know how recently this was associated with the port
         self.timestamp = datetime.now()
 
+    def file_string(self):
+        return "{}:{}:{}:{}\n".format(self.port, self.name, self.fd, self.timestamp.strftime('%Y-%m-%d-%H-%M-%S-%f'))
+
     def __str__(self):
         return "{}({}, port:{}) as of {}".format(self.name, self.fd, self.port, self.timestamp)
 

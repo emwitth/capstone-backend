@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
+import os
 
 # my modules
 from sniffer import PacketSniffer
@@ -16,11 +17,30 @@ class Server:
         return jsonify(self.packet_sniffer.get_graph_json())
 
     def sniff_controller(self, on):
+        params = request.get_json()
         if(on.title() == "True"):
             self.packet_sniffer.sniff_packets()
             return jsonify("Packet Sniffer Started")
         elif(on.title() == "False"):
-            self.packet_sniffer.stop_sniffing()
+            if(params["sessionName"] == ""):
+                print("There is no session name.")
+                self.packet_sniffer.stop_sniffing()
+            else:
+                print("I got a session name: {}".format(params["sessionName"]))
+                folder_path = "sessions/{}".format(params["sessionName"])
+                if(os.path.exists(folder_path)):
+                    # session exists shouldn't overwrite it, throw an error
+                    return make_response(jsonify({"message": "Session name already exists. Try another one."}), 400)
+                else:
+                    # create folder for session
+                    os.makedirs(folder_path)
+                    self.packet_sniffer.stop_sniffing()
+                    self.packet_sniffer.write_pcap("{}/{}".format(folder_path, params["sessionName"]))
+                    self.packet_sniffer.write_port_procs(folder_path)
+                    self.packet_sniffer.write_icmp_procs(folder_path)
+                    file = open("{}/description.txt".format(folder_path), "w")
+                    file.write("{}\n".format(params["description"]))
+                    file.close()
             return jsonify("Packet Sniffer Stopped")
         return jsonify("Failed")
 
