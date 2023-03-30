@@ -44,6 +44,19 @@ class Server:
             return jsonify("Packet Sniffer Stopped")
         return jsonify("Failed")
 
+    def list_sessions(self):
+        sessions = os.listdir("sessions")
+        print(sessions)
+        session_list = []
+        for session in sessions:
+            file = open("sessions/{}/description.txt".format(session), "r")
+            description = file.read()
+            session_list.append({
+            "name": session,
+            "description": description
+            })
+        return jsonify(session_list)
+
     def node_packets(self):
         params = request.get_json()
         if(params["isIP"] == True):
@@ -86,6 +99,7 @@ class Server:
     def initalize_urls(self):
         self.app.add_url_rule('/api/graph-data', 'graph_data', self.graph_data)
         self.app.add_url_rule('/api/sniff/<string:on>', 'sniff_controller', self.sniff_controller, methods=['POST'])
+        self.app.add_url_rule('/api/sessions', 'list_sessions', self.list_sessions)
         self.app.add_url_rule('/api/node_packets', 'node_packets', self.node_packets, methods=['POST'])
         self.app.add_url_rule('/api/link_packets', 'link_packets', self.link_packets, methods=['POST'])
         self.app.add_url_rule('/api/hide', 'hide', self.hide, methods=['POST'])
