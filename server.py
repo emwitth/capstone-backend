@@ -38,6 +38,9 @@ class Server:
                     self.packet_sniffer.write_pcap("{}/{}".format(folder_path, params["sessionName"]))
                     self.packet_sniffer.write_port_procs(folder_path)
                     self.packet_sniffer.write_icmp_procs(folder_path)
+                    file = open("{}/description.txt".format(folder_path), "w")
+                    file.write("{}\n".format(params["description"]))
+                    file.close()
             return jsonify("Packet Sniffer Stopped")
         return jsonify("Failed")
 
