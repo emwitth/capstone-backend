@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, make_response
 import os
 from shutil import rmtree
+from datetime import datetime
 
 # my modules
 from sniffer import PacketSniffer
@@ -42,6 +43,9 @@ class Server:
                     file = open("{}/description.txt".format(folder_path), "w")
                     file.write("{}\n".format(params["description"]))
                     file.close()
+                    file = open("{}/timestamp.txt".format(folder_path), "w")
+                    file.write("{}\n".format(datetime.now()))
+                    file.close()
             return jsonify("Packet Sniffer Stopped")
         return jsonify("Failed")
 
@@ -52,9 +56,12 @@ class Server:
         for session in sessions:
             file = open("sessions/{}/description.txt".format(session), "r")
             description = file.read()
+            file = open("sessions/{}/timestamp.txt".format(session), "r")
+            timestamp = file.read()
             session_list.append({
             "name": session,
-            "description": description
+            "description": description,
+            "timestamp":timestamp
             })
         return jsonify(session_list)
 
