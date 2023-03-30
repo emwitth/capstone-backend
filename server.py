@@ -1,5 +1,7 @@
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request, make_response, send_from_directory
 import os
+from shutil import rmtree
+from datetime import datetime
 
 # my modules
 from sniffer import PacketSniffer
@@ -41,8 +43,40 @@ class Server:
                     file = open("{}/description.txt".format(folder_path), "w")
                     file.write("{}\n".format(params["description"]))
                     file.close()
+                    file = open("{}/timestamp.txt".format(folder_path), "w")
+                    file.write("{}\n".format(datetime.now()))
+                    file.close()
             return jsonify("Packet Sniffer Stopped")
         return jsonify("Failed")
+
+    def list_sessions(self):
+        sessions = os.listdir("sessions")
+        print(sessions)
+        session_list = []
+        for session in sessions:
+            file = open("sessions/{}/description.txt".format(session), "r")
+            description = file.read()
+            file = open("sessions/{}/timestamp.txt".format(session), "r")
+            timestamp = file.read()
+            session_list.append({
+            "name": session,
+            "description": description,
+            "timestamp":timestamp
+            })
+        return jsonify(session_list)
+
+    def delete_session(self, name):
+        print(name)
+        path = "sessions/{}".format(name)
+        if os.path.isdir(path):
+            rmtree(path)
+            return make_response(jsonify("Session {} deleted successfully".format(name)), 200)
+        return make_response(jsonify("Session {} does not exist.".format(name)), 404)
+
+    def get_pcap(self, name):
+        path = "sessions/{}".format(name)
+        file = "{}.pcap".format(name)
+        return send_from_directory(path, file, as_attachment=True)
 
     def node_packets(self):
         params = request.get_json()
@@ -86,6 +120,9 @@ class Server:
     def initalize_urls(self):
         self.app.add_url_rule('/api/graph-data', 'graph_data', self.graph_data)
         self.app.add_url_rule('/api/sniff/<string:on>', 'sniff_controller', self.sniff_controller, methods=['POST'])
+        self.app.add_url_rule('/api/sessions', 'list_sessions', self.list_sessions)
+        self.app.add_url_rule('/api/sessions/<string:name>', 'delete_session', self.delete_session, methods=['DELETE'])
+        self.app.add_url_rule('/api/sessions/<string:name>/pcap', 'get_pcap', self.get_pcap, methods=['POST'])
         self.app.add_url_rule('/api/node_packets', 'node_packets', self.node_packets, methods=['POST'])
         self.app.add_url_rule('/api/link_packets', 'link_packets', self.link_packets, methods=['POST'])
         self.app.add_url_rule('/api/hide', 'hide', self.hide, methods=['POST'])
