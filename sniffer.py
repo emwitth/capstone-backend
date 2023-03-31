@@ -510,12 +510,6 @@ class PacketSniffer:
         print("Sniffing Started")
         self.capture.start()
 
-    def read_pcap(self, path):
-        print("Reading session from {}".format(path))
-        pcap = rdpcap(path)
-        for packet in pcap:
-            print(packet.summary())
-
     def stop_sniffing(self):
         self.cap = self.capture.stop()
         print("Done Sniffing")
@@ -527,6 +521,12 @@ class PacketSniffer:
     def write_pcap(self, path):
         wrpcap("{}.pcap".format(path),self.cap)
 
+    def read_pcap(self, path):
+        print("Reading session from {}".format(path))
+        pcap = rdpcap(path)
+        for packet in pcap:
+            self.process_packet(packet)
+
     def write_port_procs(self, path):
         file = open("{}/port.txt".format(path), "w")
         for entry in self.port_procs:
@@ -536,8 +536,10 @@ class PacketSniffer:
     def read_port_procs(self, path):
         file = open("{}/port.txt".format(path), "r")
         procs = file.readlines()
-        for proc in procs:
-            print(proc)
+        for entry in procs:
+            variables = entry.rstrip().split(":")
+            proc = ProgInfo(variables[1], variables[0], variables[2], variables[3])
+            self.port_procs[variables[1]] = proc
 
     def write_icmp_procs(self, path):
         file = open("{}/icmp.txt".format(path), "w")
@@ -548,5 +550,7 @@ class PacketSniffer:
     def read_icmp_procs(self, path):
         file = open("{}/icmp.txt".format(path), "r")
         procs = file.readlines()
-        for proc in procs:
-            print(proc)
+        for entry in procs:
+            variables = entry.rstrip().split(":")
+            proc = ProgInfo(variables[2], variables[1], variables[3], variables[4])
+            self.icmp_procs[variables[0]] = proc
