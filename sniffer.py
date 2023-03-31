@@ -47,6 +47,25 @@ class PacketSniffer:
         # get my address
         self.getMyAddr()
 
+    def reset(self):
+        if len(self.seen_ips) > 1:
+            self.seen_ips = {}
+            self.ip_nodes = {}
+            self.port_procs = {}
+            self.icmp_procs = {}
+            self.my_ip = ""
+            self.hidden_prog_nodes = {}
+            self.hidden_ip_nodes = {}
+            self.hidden_links = {}
+            self.prog_nodes = {}
+            self.ip_nodes = {}
+            # add the catchall node for "no process"
+            self.emptyProcess = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
+            self.prog_nodes[self.emptyProcess] = ProgNode(self.emptyProcess, NO_IP, NO_ROLE)
+            self.cap = []
+            # get my address
+            self.getMyAddr()
+
     def getMyAddr(self):
         for iface in netifaces.interfaces():
             iface_details = netifaces.ifaddresses(iface)
@@ -115,7 +134,7 @@ class PacketSniffer:
 
     def associate_port_id_with_process(self, id) -> ProgInfo:
         if self.isLoadedSession:
-            if port in self.icmp_procs:
+            if id in self.icmp_procs:
                 toReturn = self.icmp_procs[id]
             else:
                 return ProgInfo(NO_PROC, NO_PORT, NO_PROC)

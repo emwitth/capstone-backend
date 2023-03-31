@@ -21,6 +21,7 @@ class Server:
     def sniff_controller(self, on):
         params = request.get_json()
         if(on.title() == "True"):
+            self.packet_sniffer.reset()
             self.packet_sniffer.sniff_packets()
             return jsonify("Packet Sniffer Started")
         elif(on.title() == "False"):
@@ -79,6 +80,7 @@ class Server:
         return send_from_directory(path, file, as_attachment=True)
 
     def load_session(self, name):
+        self.packet_sniffer.reset()
         path = "sessions/{}".format(name)
         file = "{}.pcap".format(name)
         self.packet_sniffer.read_port_procs(path)
