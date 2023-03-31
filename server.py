@@ -81,9 +81,10 @@ class Server:
     def load_session(self, name):
         path = "sessions/{}".format(name)
         file = "{}.pcap".format(name)
-        self.packet_sniffer.read_pcap("{}/{}".format(path, file))
         self.packet_sniffer.read_port_procs(path)
         self.packet_sniffer.read_icmp_procs(path)
+        self.packet_sniffer.isLoadedSession = True
+        self.packet_sniffer.read_pcap("{}/{}".format(path, file))
         return jsonify("Read Pcap")
 
     def node_packets(self):
