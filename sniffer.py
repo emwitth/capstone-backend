@@ -80,15 +80,9 @@ class PacketSniffer:
             return DEST
 
     def associate_port_with_process(self, port) -> ProgInfo:
-        print("port association")
         process_and_timestamp = "";
         toReturn = ProgInfo(NO_PROC, port, NO_PROC)
-        # for proc in self.port_procs:
-            # print(proc, port)
-            # print(type(proc), type(port))
         if self.isLoadedSession:
-            # print("port", port)
-            # print(port in self.port_procs)
             if port in self.port_procs:
                 toReturn = self.port_procs[port]
             else:
@@ -120,9 +114,7 @@ class PacketSniffer:
         return toReturn
 
     def associate_port_id_with_process(self, id) -> ProgInfo:
-        # print("icmp association")
         if self.isLoadedSession:
-            # print("icmpid", id)
             if port in self.icmp_procs:
                 toReturn = self.icmp_procs[id]
             else:
@@ -558,11 +550,7 @@ class PacketSniffer:
         for entry in procs:
             variables = entry.rstrip().split(":")
             proc = ProgInfo(variables[1], int(variables[0]), int(variables[2]), variables[3])
-            # print(proc)
             self.port_procs[int(variables[0])] = proc
-            print(variables[0], self.port_procs[int(variables[0])])
-        for proc in self.port_procs:
-            print(proc)
 
     def write_icmp_procs(self, path):
         file = open("{}/icmp.txt".format(path), "w")
@@ -577,5 +565,3 @@ class PacketSniffer:
             variables = entry.rstrip().split(":")
             proc = ProgInfo(variables[2], variables[1], int(variables[3]), variables[4])
             self.icmp_procs[int(variables[0])] = proc
-        # for proc in self.icmp_procs:
-        #     print(port)
