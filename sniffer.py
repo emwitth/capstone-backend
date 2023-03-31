@@ -59,9 +59,11 @@ class PacketSniffer:
             self.hidden_links = {}
             self.prog_nodes = {}
             self.ip_nodes = {}
+            self.isLoadedSession = False
             # add the catchall node for "no process"
             self.emptyProcess = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
             self.prog_nodes[self.emptyProcess] = ProgNode(self.emptyProcess, NO_IP, NO_ROLE)
+            self.capture = AsyncSniffer(prn=self.process_packet)
             self.cap = []
             # get my address
             self.getMyAddr()
