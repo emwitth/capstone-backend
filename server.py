@@ -55,15 +55,18 @@ class Server:
         print(sessions)
         session_list = []
         for session in sessions:
-            file = open("sessions/{}/description.txt".format(session), "r")
-            description = file.read()
-            file = open("sessions/{}/timestamp.txt".format(session), "r")
-            timestamp = file.read()
-            session_list.append({
-            "name": session,
-            "description": description,
-            "timestamp":timestamp
-            })
+            if(os.path.exists("sessions/{}/description.txt".format(session))):
+                file = open("sessions/{}/description.txt".format(session), "r")
+                description = file.read()
+            if(os.path.exists("sessions/{}/timestamp.txt".format(session))):
+                file = open("sessions/{}/timestamp.txt".format(session), "r")
+                timestamp = file.read()
+            if(os.path.exists("sessions/{}".format(session))):
+                session_list.append({
+                "name": session,
+                "description": description,
+                "timestamp":timestamp
+                })
         return jsonify(session_list)
 
     def delete_session(self, name):
