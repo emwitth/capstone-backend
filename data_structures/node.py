@@ -13,11 +13,14 @@ class ProgInfo:
     fd: str
     timestamp:str
 
-    def __init__(self, name:str, port:str, fd:str) -> None:
+    def __init__(self, name:str, port:str, fd:str, timestamp = "") -> None:
         self.name = name
         self.port = port
         self.fd = fd
-        self.update_timestamp()
+        if(timestamp != ""):
+            self.timestamp = datetime.strptime(timestamp,'%Y-%m-%d-%H-%M-%S-%f')
+        else:
+            self.update_timestamp()
 
     def update_timestamp(self):
         # update the timestamp so we know how recently this was associated with the port

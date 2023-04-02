@@ -21,6 +21,7 @@ class Server:
     def sniff_controller(self, on):
         params = request.get_json()
         if(on.title() == "True"):
+            self.packet_sniffer.reset()
             self.packet_sniffer.sniff_packets()
             return jsonify("Packet Sniffer Started")
         elif(on.title() == "False"):
@@ -54,15 +55,18 @@ class Server:
         print(sessions)
         session_list = []
         for session in sessions:
-            file = open("sessions/{}/description.txt".format(session), "r")
-            description = file.read()
-            file = open("sessions/{}/timestamp.txt".format(session), "r")
-            timestamp = file.read()
-            session_list.append({
-            "name": session,
-            "description": description,
-            "timestamp":timestamp
-            })
+            if(os.path.exists("sessions/{}/description.txt".format(session))):
+                file = open("sessions/{}/description.txt".format(session), "r")
+                description = file.read()
+            if(os.path.exists("sessions/{}/timestamp.txt".format(session))):
+                file = open("sessions/{}/timestamp.txt".format(session), "r")
+                timestamp = file.read()
+            if(os.path.exists("sessions/{}".format(session))):
+                session_list.append({
+                "name": session,
+                "description": description,
+                "timestamp":timestamp
+                })
         return jsonify(session_list)
 
     def delete_session(self, name):
@@ -77,6 +81,16 @@ class Server:
         path = "sessions/{}".format(name)
         file = "{}.pcap".format(name)
         return send_from_directory(path, file, as_attachment=True)
+
+    def load_session(self, name):
+        self.packet_sniffer.reset()
+        path = "sessions/{}".format(name)
+        file = "{}.pcap".format(name)
+        self.packet_sniffer.read_port_procs(path)
+        self.packet_sniffer.read_icmp_procs(path)
+        self.packet_sniffer.isLoadedSession = True
+        self.packet_sniffer.read_pcap("{}/{}".format(path, file))
+        return jsonify("Read Pcap")
 
     def node_packets(self):
         params = request.get_json()
@@ -123,6 +137,7 @@ class Server:
         self.app.add_url_rule('/api/sessions', 'list_sessions', self.list_sessions)
         self.app.add_url_rule('/api/sessions/<string:name>', 'delete_session', self.delete_session, methods=['DELETE'])
         self.app.add_url_rule('/api/sessions/<string:name>/pcap', 'get_pcap', self.get_pcap, methods=['POST'])
+        self.app.add_url_rule('/api/sessions/<string:name>', 'load_session', self.load_session, methods=['POST'])
         self.app.add_url_rule('/api/node_packets', 'node_packets', self.node_packets, methods=['POST'])
         self.app.add_url_rule('/api/link_packets', 'link_packets', self.link_packets, methods=['POST'])
         self.app.add_url_rule('/api/hide', 'hide', self.hide, methods=['POST'])
