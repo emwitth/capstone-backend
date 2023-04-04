@@ -25,6 +25,7 @@ class PacketSniffer:
     capture: AsyncSniffer
     cap: PacketList
     lock: Lock
+    isLoadedSession = False
 
     # items to become the JSON object
     prog_nodes = {}
@@ -45,6 +46,27 @@ class PacketSniffer:
 
         # get my address
         self.getMyAddr()
+
+    def reset(self):
+        if len(self.seen_ips) > 1:
+            self.seen_ips = {}
+            self.ip_nodes = {}
+            self.port_procs = {}
+            self.icmp_procs = {}
+            self.my_ip = ""
+            self.hidden_prog_nodes = {}
+            self.hidden_ip_nodes = {}
+            self.hidden_links = {}
+            self.prog_nodes = {}
+            self.ip_nodes = {}
+            self.isLoadedSession = False
+            # add the catchall node for "no process"
+            self.emptyProcess = ProgInfo(NO_PROC, NO_PORT, NO_PROC)
+            self.prog_nodes[self.emptyProcess] = ProgNode(self.emptyProcess, NO_IP, NO_ROLE)
+            self.capture = AsyncSniffer(prn=self.process_packet)
+            self.cap = []
+            # get my address
+            self.getMyAddr()
 
     def getMyAddr(self):
         for iface in netifaces.interfaces():
@@ -81,6 +103,11 @@ class PacketSniffer:
     def associate_port_with_process(self, port) -> ProgInfo:
         process_and_timestamp = "";
         toReturn = ProgInfo(NO_PROC, port, NO_PROC)
+        if self.isLoadedSession:
+            if port in self.port_procs:
+                toReturn = self.port_procs[port]
+            else:
+                return toReturn
         # search for port in current connections
         for connection in net_connections():
             if connection.laddr.port == port:
@@ -108,6 +135,11 @@ class PacketSniffer:
         return toReturn
 
     def associate_port_id_with_process(self, id) -> ProgInfo:
+        if self.isLoadedSession:
+            if id in self.icmp_procs:
+                toReturn = self.icmp_procs[id]
+            else:
+                return ProgInfo(NO_PROC, NO_PORT, NO_PROC)
         # find process by id
         for proc in process_iter():
             if(proc.pid == id):
@@ -521,14 +553,36 @@ class PacketSniffer:
     def write_pcap(self, path):
         wrpcap("{}.pcap".format(path),self.cap)
 
+    def read_pcap(self, path):
+        print("Reading session from {}".format(path))
+        pcap = rdpcap(path)
+        for packet in pcap:
+            self.process_packet(packet)
+
     def write_port_procs(self, path):
         file = open("{}/port.txt".format(path), "w")
         for entry in self.port_procs:
             file.write(self.port_procs[entry].file_string())
         file.close()
 
+    def read_port_procs(self, path):
+        file = open("{}/port.txt".format(path), "r")
+        procs = file.readlines()
+        for entry in procs:
+            variables = entry.rstrip().split(":")
+            proc = ProgInfo(variables[1], int(variables[0]), int(variables[2]), variables[3])
+            self.port_procs[int(variables[0])] = proc
+
     def write_icmp_procs(self, path):
         file = open("{}/icmp.txt".format(path), "w")
         for entry in self.icmp_procs:
             file.write("{}:{}".format(entry, self.icmp_procs[entry].file_string()))
         file.close()
+
+    def read_icmp_procs(self, path):
+        file = open("{}/icmp.txt".format(path), "r")
+        procs = file.readlines()
+        for entry in procs:
+            variables = entry.rstrip().split(":")
+            proc = ProgInfo(variables[2], variables[1], int(variables[3]), variables[4])
+            self.icmp_procs[int(variables[0])] = proc
