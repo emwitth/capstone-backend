@@ -110,7 +110,7 @@ class PacketSniffer:
                 return toReturn
         # search for port in current connections
         for connection in net_connections():
-            if connection.laddr.port == port:
+            if connection.laddr.port == port and connection.pid != None:
                 # update info if is in port_procs, else make new info class
                 self.lock.acquire() # acquire lock
                 try:
@@ -120,9 +120,12 @@ class PacketSniffer:
                         process = ProgInfo(Process(connection.pid).name(), port, connection.pid)
                         self.port_procs[port] = process
                     toReturn = self.port_procs[port]
+                except:
+                    pass
+                else:
+                    return toReturn
                 finally:
                     self.lock.release() # release lock
-                return toReturn
         # if the loop fails to find the port, the port is no longer being used
         # return the last associated process, or nothing if there is none
         if process_and_timestamp == "":
