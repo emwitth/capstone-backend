@@ -41,6 +41,7 @@ class Server:
                     self.packet_sniffer.write_pcap("{}/{}".format(folder_path, params["sessionName"]))
                     self.packet_sniffer.write_port_procs(folder_path)
                     self.packet_sniffer.write_icmp_procs(folder_path)
+                    self.packet_sniffer.write_ip_address(folder_path)
                     file = open("{}/description.txt".format(folder_path), "w")
                     file.write("{}\n".format(params["description"]))
                     file.close()
@@ -55,6 +56,8 @@ class Server:
         print(sessions)
         session_list = []
         for session in sessions:
+            description = ""
+            timestamp = ""
             if(os.path.exists("sessions/{}/description.txt".format(session))):
                 file = open("sessions/{}/description.txt".format(session), "r")
                 description = file.read()
@@ -86,6 +89,7 @@ class Server:
         self.packet_sniffer.reset()
         path = "sessions/{}".format(name)
         file = "{}.pcap".format(name)
+        self.packet_sniffer.read_ip_address(path)
         self.packet_sniffer.read_port_procs(path)
         self.packet_sniffer.read_icmp_procs(path)
         self.packet_sniffer.isLoadedSession = True

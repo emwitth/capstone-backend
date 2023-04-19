@@ -95,9 +95,9 @@ class PacketSniffer:
         self.seen_ips[address].add(name)
 
     def check_if_src_or_dest(self, src, dest):
-        if src == self.my_ip:
+        if self.my_ip.__eq__(src):
             return SRC
-        elif dest == self.my_ip:
+        elif self.my_ip.__eq__(dest):
             return DEST
 
     def associate_port_with_process(self, port) -> ProgInfo:
@@ -105,7 +105,7 @@ class PacketSniffer:
         toReturn = ProgInfo(NO_PROC, port, NO_PROC)
         if self.isLoadedSession:
             if port in self.port_procs:
-                toReturn = self.port_procs[port]
+                return self.port_procs[port]
             else:
                 return toReturn
         # search for port in current connections
@@ -562,6 +562,18 @@ class PacketSniffer:
         for packet in pcap:
             self.process_packet(packet)
 
+    def write_ip_address(self, path):
+        file = open("{}/ip.txt".format(path), "w")
+        file.write(self.my_ip)
+        file.close()
+
+    def read_ip_address(self, path):
+        file = open("{}/ip.txt".format(path), "r")
+        address = file.read()
+        print(address)
+        self.my_ip = address.rstrip()
+        file.close()
+
     def write_port_procs(self, path):
         file = open("{}/port.txt".format(path), "w")
         for entry in self.port_procs:
@@ -573,8 +585,10 @@ class PacketSniffer:
         procs = file.readlines()
         for entry in procs:
             variables = entry.rstrip().split(":")
-            proc = ProgInfo(variables[1], int(variables[0]), int(variables[2]), variables[3])
+            fd = int(variables[2]) if variables[2].isnumeric() else variables[2]
+            proc = ProgInfo(variables[1], int(variables[0]), fd, variables[3])
             self.port_procs[int(variables[0])] = proc
+        file.close()
 
     def write_icmp_procs(self, path):
         file = open("{}/icmp.txt".format(path), "w")
@@ -589,3 +603,4 @@ class PacketSniffer:
             variables = entry.rstrip().split(":")
             proc = ProgInfo(variables[2], variables[1], int(variables[3]), variables[4])
             self.icmp_procs[int(variables[0])] = proc
+        file.close()
