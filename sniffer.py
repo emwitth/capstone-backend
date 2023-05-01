@@ -404,6 +404,16 @@ class PacketSniffer:
                     # remove from structure if there
                     if con.ip.ip in self.hidden_ip_nodes:
                         self.hidden_ip_nodes.pop(con.ip.ip)
+                # mark links double deep as shown if connected node is visible
+                for link in progNode.cons:
+                    con = progNode.cons[link]
+                    for link2 in con.ip.cons:
+                        con2 = con.ip.cons[link2]
+                        if con2.program.is_hidden == False:
+                            con2.is_hidden = False
+                            con2.program.cons[link2].is_hidden = False
+                            if link2 in self.hidden_links:
+                                self.hidden_links.pop(link2)
         finally:
             self.lock.release() # release lock
 
@@ -427,6 +437,16 @@ class PacketSniffer:
                     # remove from structure if there
                     if con.program.program in self.hidden_prog_nodes:
                         self.hidden_prog_nodes.pop(con.program.program)
+                # mark links double deep as shown if connected node is visible
+                for link in ipNode.cons:
+                    con = ipNode.cons[link]
+                    for link2 in con.program.cons:
+                        con2 = con.program.cons[link2]
+                        if con2.ip.is_hidden == False:
+                            con2.is_hidden = False
+                            con2.ip.cons[link2].is_hidden = False
+                            if link2 in self.hidden_links:
+                                self.hidden_links.pop(link2)
         finally:
             self.lock.release() # release lock
 
@@ -446,6 +466,14 @@ class PacketSniffer:
                 # remove from structure if there
                 if progNode.program in self.hidden_prog_nodes:
                     self.hidden_prog_nodes.pop(progNode.program)
+                # mark links double deep as shown if connected node is visible
+                    for link2 in progNode.cons:
+                        con2 = progNode.cons[link2]
+                        if con2.ip.is_hidden == False:
+                            con2.is_hidden = False
+                            con2.ip.cons[link2].is_hidden = False
+                            if link2 in self.hidden_links:
+                                self.hidden_links.pop(link2)
             if ip in self.ip_nodes:
                 # show this link in the ipNode
                 ipNode = self.ip_nodes[ip]
@@ -455,6 +483,14 @@ class PacketSniffer:
                 # remove from structure if there
                 if ipNode.ip in self.hidden_ip_nodes:
                     self.hidden_ip_nodes.pop(ipNode.ip)
+                # mark links double deep as shown if connected node is visible
+                    for link2 in ipNode.cons:
+                        con2 = ipNode.cons[link2]
+                        if con2.program.is_hidden == False:
+                            con2.is_hidden = False
+                            con2.program.cons[link2].is_hidden = False
+                            if link2 in self.hidden_links:
+                                self.hidden_links.pop(link2)
         finally:
             self.lock.release() # release lock
 
